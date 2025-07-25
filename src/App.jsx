@@ -1,0 +1,268 @@
+import React, { useCallback, useState } from 'react';
+import JsonUploader from './components/JsonUploader';
+import FilterForm from './components/FilterForm';
+import TicketList from './components/TicketList';
+import CsvDownloadButton from './components/CsvDownloadButton';
+import GptAnalyzer from './components/GptAnalyzer';
+import { useJsonTickets } from './hooks/useJsonTickets';
+import './App.css';
+
+function App() {
+  const {
+    allTickets,
+    filteredTickets,
+    fileName,
+    stats,
+    suggestions,
+    isLoading,
+    error,
+    hasData,
+    totalCount,
+    filteredCount,
+    isFiltered,
+    loadTickets,
+    applyFilters,
+    clearData,
+    clearError
+  } = useJsonTickets();
+
+  // GPT 분석 관련 상태
+  const [analyzedTickets, setAnalyzedTickets] = useState([]);
+  const [showAnalyzedResults, setShowAnalyzedResults] = useState(false);
+  const [analysisSummary, setAnalysisSummary] = useState(null);
+
+  // JSON 데이터 로드 핸들러
+  const handleDataLoaded = useCallback((tickets, filename) => {
+    loadTickets(tickets, filename);
+    // 새 데이터 로드시 분석 결과 초기화
+    setAnalyzedTickets([]);
+    setShowAnalyzedResults(false);
+    setAnalysisSummary(null);
+  }, [loadTickets]);
+
+  // GPT 분석 완료 핸들러
+  const handleAnalysisComplete = useCallback((analyzed, summary) => {
+    setAnalyzedTickets(analyzed);
+    setAnalysisSummary(summary);
+    setShowAnalyzedResults(true);
+    console.log('✅ 분석 완료:', summary);
+  }, []);
+
+  // 분석 결과 토글
+  const toggleAnalysisView = useCallback(() => {
+    setShowAnalyzedResults(!showAnalyzedResults);
+  }, [showAnalyzedResults]);
+
+  // 에러 핸들러
+  const handleError = useCallback((errorMessage) => {
+    console.error('파일 처리 오류:', errorMessage);
+    
+    // 더 사용자 친화적인 에러 메시지 표시
+    let displayMessage = errorMessage;
+    
+    if (errorMessage.includes('JSON 형식이 올바르지 않습니다')) {
+      displayMessage = `JSON 파일 형식 오류\n\n${errorMessage}\n\n파일이 올바른 JSON 형식인지 확인해주세요.`;
+    } else if (errorMessage.includes('티켓 데이터를 찾을 수 없습니다')) {
+      displayMessage = `데이터 구조 오류\n\n${errorMessage}`;
+    }
+    
+    alert(displayMessage);
+  }, []);
+
+  // 필터 적용 핸들러
+  const handleFilter = useCallback((filters) => {
+    applyFilters(filters);
+  }, [applyFilters]);
+
+  return (
+    <div className="App">
+      <div className="container">
+        {/* 헤더 */}
+        <header className="app-header">
+          <h1>🎫 Zendesk 티켓 분석기</h1>
+          <p>🤖 GPT AI 기반 고객 문의 내용 추출 및 분석 시스템</p>
+        </header>
+
+        {/* 에러 표시 */}
+        {error && (
+          <div className="error">
+            <strong>오류가 발생했습니다:</strong><br />
+            {error}
+            <button 
+              onClick={clearError}
+              style={{ 
+                marginLeft: '10px', 
+                padding: '2px 8px', 
+                fontSize: '12px',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '3px',
+                cursor: 'pointer'
+              }}
+            >
+              닫기
+            </button>
+          </div>
+        )}
+
+        {/* JSON 파일 업로드 */}
+        {!hasData && (
+          <JsonUploader 
+            onDataLoaded={handleDataLoaded}
+            onError={handleError}
+          />
+        )}
+
+        {/* 데이터가 로드된 후의 UI */}
+        {hasData && (
+          <>
+            {/* 데이터 관리 섹션 */}
+            <div className="data-management">
+              <div className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px' }}>
+                  <div style={{ flex: '1', minWidth: '250px' }}>
+                    <h3 style={{ margin: '0 0 8px 0' }}>📊 로드된 데이터</h3>
+                    <p style={{ margin: 0 }}>
+                      <strong>{fileName}</strong> - {totalCount.toLocaleString()}개 티켓
+                      {isFiltered && (
+                        <span> (필터링: {filteredCount.toLocaleString()}개)</span>
+                      )}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+                    {/* CSV 다운로드 버튼 */}
+                    {(showAnalyzedResults ? analyzedTickets : filteredTickets).length > 0 && (
+                      <CsvDownloadButton 
+                        tickets={showAnalyzedResults ? analyzedTickets : filteredTickets} 
+                        disabled={isLoading} 
+                      />
+                    )}
+                    {/* 새 파일 업로드 버튼 */}
+                    <button 
+                      className="btn btn-secondary"
+                      onClick={clearData}
+                      disabled={isLoading}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      새 파일 업로드
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* GPT 분석 섹션 */}
+            <GptAnalyzer 
+              tickets={allTickets}
+              onAnalysisComplete={handleAnalysisComplete}
+            />
+
+            {/* 분석 결과 토글 */}
+            {analyzedTickets.length > 0 && (
+              <div style={{ 
+                textAlign: 'center', 
+                marginBottom: '20px',
+                padding: '20px',
+                backgroundColor: '#e7f3ff',
+                borderRadius: '8px',
+                border: '2px solid #007bff'
+              }}>
+                <div style={{ marginBottom: '15px' }}>
+                  <h4 style={{ color: '#007bff', margin: '0 0 10px 0' }}>
+                    ✅ GPT 분석 완료!
+                  </h4>
+                  <p style={{ margin: '0 0 10px 0', color: '#0066cc' }}>
+                    {analysisSummary && (
+                      <>
+                        총 {analysisSummary.total}개 티켓 중 {analysisSummary.successful}개 성공
+                        {analysisSummary.failed > 0 && `, ${analysisSummary.failed}개 실패`}
+                        {analysisSummary.isMock && ' (모의 분석 모드)'}
+                      </>
+                    )}
+                  </p>
+                </div>
+                <button
+                  onClick={toggleAnalysisView}
+                  style={{
+                    backgroundColor: showAnalyzedResults ? '#28a745' : '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    transition: 'background-color 0.3s'
+                  }}
+                >
+                  {showAnalyzedResults ? '📊 원본 데이터 보기' : '🤖 GPT 분석 결과 보기'}
+                </button>
+              </div>
+            )}
+
+            {/* 분석 완료 후에만 필터링 폼과 티켓 목록 표시 */}
+            {analyzedTickets.length > 0 && (
+              <>
+                {/* 필터링 폼 */}
+                <FilterForm 
+                  tickets={allTickets}
+                  onFilter={handleFilter}
+                  suggestions={suggestions}
+                />
+
+                {/* 티켓 목록 */}
+                <TicketList 
+                  tickets={showAnalyzedResults ? analyzedTickets : filteredTickets}
+                  loading={isLoading}
+                  error={null}
+                  isAnalyzed={showAnalyzedResults}
+                />
+              </>
+            )}
+          </>
+        )}
+
+        {/* 푸터 */}
+        <footer className="app-footer">
+          <p>
+            <small>
+              💡 <strong>사용 팁:</strong> 
+              JSON 파일을 업로드한 후 다양한 필터를 사용하여 원하는 티켓을 찾아보세요. 
+              모든 필터링은 실시간으로 적용됩니다.
+            </small>
+          </p>
+          
+          <details style={{ marginTop: '15px' }}>
+            <summary style={{ cursor: 'pointer', color: '#007bff' }}>
+              📋 지원되는 JSON 형식 예시
+            </summary>
+            <div style={{ 
+              backgroundColor: '#f8f9fa', 
+              padding: '15px', 
+              borderRadius: '4px',
+              marginTop: '10px',
+              fontSize: '12px'
+            }}>
+              <pre>{`{
+  "tickets": [
+    {
+      "id": 12345,
+      "subject": "문의 제목",
+      "created_at": "2023-01-01T12:00:00Z",
+      "status": "open",
+      "priority": "normal",
+      "tags": ["tag1", "tag2"],
+      "description": "문의 내용..."
+    }
+  ]
+}`}</pre>
+            </div>
+          </details>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+export default App; 

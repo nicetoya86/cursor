@@ -1,0 +1,276 @@
+import React, { useState, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
+import CreatableSelect from 'react-select/creatable';
+import 'react-datepicker/dist/react-datepicker.css';
+
+const FilterForm = ({ tickets, onFilter, suggestions }) => {
+  const [filters, setFilters] = useState({
+    startDate: null,
+    endDate: null,
+    tags: [],
+    searchText: ''
+  });
+
+  // 필터 변경 시 자동으로 필터링 적용
+  useEffect(() => {
+    onFilter(filters);
+  }, [filters, onFilter]);
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleReset = () => {
+    const resetFilters = {
+      startDate: null,
+      endDate: null,
+      tags: [],
+      searchText: ''
+    };
+    setFilters(resetFilters);
+  };
+
+  // 빠른 날짜 선택
+  const setQuickDate = (days) => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - days);
+    setFilters(prev => ({
+      ...prev,
+      startDate: start,
+      endDate: end
+    }));
+  };
+
+  // 태그 생성 핸들러
+  const handleTagCreate = (inputValue) => {
+    const newTag = { value: inputValue, label: inputValue };
+    handleFilterChange('tags', [...filters.tags, newTag]);
+    return newTag;
+  };
+
+  // 활성 필터 개수 계산
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.startDate || filters.endDate) count++;
+    if (filters.tags.length > 0) count++;
+    if (filters.searchText.trim()) count++;
+    return count;
+  };
+
+  const activeFilterCount = getActiveFilterCount();
+
+  return (
+    <div className="card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+        <h2 style={{ margin: 0 }}>🔍 필터 및 검색</h2>
+        {activeFilterCount > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+            <span className="filter-count">
+              {activeFilterCount}개 필터 활성
+            </span>
+            <button 
+              type="button" 
+              className="btn btn-secondary"
+              onClick={handleReset}
+              style={{ fontSize: '12px', padding: '6px 12px', whiteSpace: 'nowrap' }}
+            >
+              초기화
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="filter-grid">
+        {/* 텍스트 검색 */}
+        <div className="form-group">
+          <label className="form-label">텍스트 검색</label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="제목이나 내용에서 검색..."
+            value={filters.searchText}
+            onChange={(e) => handleFilterChange('searchText', e.target.value)}
+          />
+        </div>
+
+        {/* 날짜 범위 */}
+        <div className="form-group">
+          <label className="form-label">생성일 범위</label>
+          <div className="date-range-container">
+            <div className="date-input">
+              <label className="date-label">시작일</label>
+              <DatePicker
+                selected={filters.startDate}
+                onChange={(date) => handleFilterChange('startDate', date)}
+                selectsStart
+                startDate={filters.startDate}
+                endDate={filters.endDate}
+                placeholderText="시작 날짜"
+                dateFormat="yyyy-MM-dd"
+                className="form-control"
+              />
+            </div>
+            <div className="date-input">
+              <label className="date-label">종료일</label>
+              <DatePicker
+                selected={filters.endDate}
+                onChange={(date) => handleFilterChange('endDate', date)}
+                selectsEnd
+                startDate={filters.startDate}
+                endDate={filters.endDate}
+                minDate={filters.startDate}
+                placeholderText="종료 날짜"
+                dateFormat="yyyy-MM-dd"
+                className="form-control"
+              />
+            </div>
+          </div>
+          
+          {/* 빠른 날짜 선택 */}
+          <div className="quick-dates">
+            <button type="button" className="quick-date-btn" onClick={() => setQuickDate(7)}>
+              최근 7일
+            </button>
+            <button type="button" className="quick-date-btn" onClick={() => setQuickDate(30)}>
+              최근 30일
+            </button>
+            <button type="button" className="quick-date-btn" onClick={() => setQuickDate(90)}>
+              최근 90일
+            </button>
+          </div>
+        </div>
+
+        {/* 태그 필터 */}
+        <div className="form-group">
+          <label className="form-label">태그</label>
+          <CreatableSelect
+            isMulti
+            value={filters.tags}
+            onChange={(value) => handleFilterChange('tags', value || [])}
+            options={suggestions.tags || []}
+            onCreateOption={handleTagCreate}
+            placeholder="태그 선택 또는 입력..."
+            noOptionsMessage={() => "새 태그를 입력하려면 Enter를 누르세요"}
+            formatCreateLabel={(inputValue) => `"${inputValue}" 태그 생성`}
+            className="react-select-container"
+            classNamePrefix="react-select"
+          />
+        </div>
+      </div>
+
+      <style jsx>{`
+        .filter-count {
+          background-color: #007bff;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        .filter-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+          .filter-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .filter-grid {
+            grid-template-columns: 1fr 1fr 1fr;
+          }
+        }
+
+        .date-range-container {
+          display: flex;
+          gap: 10px;
+          align-items: end;
+        }
+
+        .date-input {
+          flex: 1;
+        }
+
+        .date-label {
+          display: block;
+          font-size: 12px;
+          color: #666;
+          margin-bottom: 4px;
+        }
+
+        .quick-dates {
+          display: flex;
+          gap: 5px;
+          margin-top: 8px;
+          flex-wrap: wrap;
+        }
+
+        .quick-date-btn {
+          background-color: #f8f9fa;
+          border: 1px solid #dee2e6;
+          color: #495057;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 11px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .quick-date-btn:hover {
+          background-color: #e9ecef;
+          border-color: #adb5bd;
+        }
+
+        .react-select-container .react-select__control {
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          min-height: 38px;
+        }
+
+        .react-select-container .react-select__control:hover {
+          border-color: #007bff;
+        }
+
+        .react-select-container .react-select__control--is-focused {
+          border-color: #007bff;
+          box-shadow: 0 0 0 1px #007bff;
+        }
+
+        .react-select-container .react-select__multi-value {
+          background-color: #e9ecef;
+        }
+
+        .react-select-container .react-select__multi-value__label {
+          color: #495057;
+        }
+
+        .react-select-container .react-select__multi-value__remove:hover {
+          background-color: #dc3545;
+          color: white;
+        }
+
+        @media (max-width: 767px) {
+          .date-range-container {
+            flex-direction: column;
+            gap: 15px;
+          }
+
+          .quick-dates {
+            justify-content: center;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default FilterForm; 

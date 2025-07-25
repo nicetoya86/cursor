@@ -1,0 +1,490 @@
+[
+  {
+    "url": "https://yeoshin.zendesk.com/api/v2/tickets/21772.json",
+    "id": 21772,
+    "external_id": null,
+    "via": {
+      "channel": "native_messaging",
+      "source": {
+        "from": {},
+        "to": {},
+        "rel": null
+      },
+      "id": 75
+    },
+    "created_at": "2025-06-17T23:50:36.000Z",
+    "updated_at": "2025-06-20T07:56:29.000Z",
+    "generated_timestamp": 1750406189,
+    "type": "incident",
+    "subject": "이예나님과의 대화",
+    "raw_subject": "이예나님과의 대화",
+    "description": "이예나님과의 대화",
+    "priority": null,
+    "status": "closed",
+    "follower_ids": [],
+    "email_cc_ids": [],
+    "forum_topic_id": null,
+    "problem_id": null,
+    "has_incidents": false,
+    "is_public": true,
+    "due_at": null,
+    "tags": ["matrixtalk", "text_out", "고객_병원_서비스불만"],
+    "custom_fields": [
+      {
+        "id": 19123461227033,
+        "value": false
+      },
+      {
+        "id": 48903180162457,
+        "value": null
+      },
+      {
+        "id": 34287666144025,
+        "value": null
+      },
+      {
+        "id": 27867775741337,
+        "value": null
+      },
+      {
+        "id": 27711543989273,
+        "value": false
+      },
+      {
+        "id": 27711398380953,
+        "value": null
+      },
+      {
+        "id": 27709475017369,
+        "value": false
+      },
+      {
+        "id": 27709460935065,
+        "value": null
+      },
+      {
+        "id": 27709414513305,
+        "value": null
+      },
+      {
+        "id": 20566428258585,
+        "value": null
+      },
+      {
+        "id": 19165432711193,
+        "value": false
+      },
+      {
+        "id": 9996360151193,
+        "value": ["고객_병원_서비스불만"]
+      },
+      {
+        "id": 18500341152409,
+        "value": "이예나"
+      },
+      {
+        "id": 18070936888473,
+        "value": null
+      },
+      {
+        "id": 13527648351385,
+        "value": "P4197976363"
+      },
+      {
+        "id": 13282225176857,
+        "value": null
+      },
+      {
+        "id": 13258388826521,
+        "value": null
+      },
+      {
+        "id": 13258349355033,
+        "value": null
+      },
+      {
+        "id": 13258347775641,
+        "value": "01055779535"
+      },
+      {
+        "id": 13258304589721,
+        "value": null
+      },
+      {
+        "id": 13258302144025,
+        "value": null
+      },
+      {
+        "id": 13167614772121,
+        "value": null
+      }
+    ],
+    "satisfaction_rating": {
+      "score": "unoffered"
+    },
+    "sharing_agreement_ids": [],
+    "custom_status_id": 9619883744153,
+    "encoded_id": "9NV7E3-RKP93",
+    "fields": [
+      {
+        "id": 19123461227033,
+        "value": false
+      },
+      {
+        "id": 48903180162457,
+        "value": null
+      },
+      {
+        "id": 34287666144025,
+        "value": null
+      },
+      {
+        "id": 27867775741337,
+        "value": null
+      },
+      {
+        "id": 27711543989273,
+        "value": false
+      },
+      {
+        "id": 27711398380953,
+        "value": null
+      },
+      {
+        "id": 27709475017369,
+        "value": false
+      },
+      {
+        "id": 27709460935065,
+        "value": null
+      },
+      {
+        "id": 27709414513305,
+        "value": null
+      },
+      {
+        "id": 20566428258585,
+        "value": null
+      },
+      {
+        "id": 19165432711193,
+        "value": false
+      },
+      {
+        "id": 9996360151193,
+        "value": ["고객_병원_서비스불만"]
+      },
+      {
+        "id": 18500341152409,
+        "value": "이예나"
+      },
+      {
+        "id": 18070936888473,
+        "value": null
+      },
+      {
+        "id": 13527648351385,
+        "value": "P4197976363"
+      },
+      {
+        "id": 13282225176857,
+        "value": null
+      },
+      {
+        "id": 13258388826521,
+        "value": null
+      },
+      {
+        "id": 13258349355033,
+        "value": null
+      },
+      {
+        "id": 13258347775641,
+        "value": "01055779535"
+      },
+      {
+        "id": 13258304589721,
+        "value": null
+      },
+      {
+        "id": 13258302144025,
+        "value": null
+      },
+      {
+        "id": 13167614772121,
+        "value": null
+      }
+    ],
+    "followup_ids": [],
+    "ticket_form_id": 13527717160089,
+    "brand_id": 9619883668889,
+    "metric_set": {
+      "url": "https://yeoshin.zendesk.com/api/v2/ticket_metrics/48059640960793.json",
+      "id": 48059640960793,
+      "ticket_id": 21772,
+      "created_at": "2025-06-17T23:50:36.000Z",
+      "updated_at": "2025-06-20T07:56:29.000Z",
+      "group_stations": 1,
+      "assignee_stations": 1,
+      "reopens": 0,
+      "replies": 8,
+      "assignee_updated_at": "2025-06-20T07:56:28.000Z",
+      "requester_updated_at": "2025-06-20T02:01:59.000Z",
+      "status_updated_at": "2025-06-20T07:56:28.000Z",
+      "initially_assigned_at": "2025-06-18T00:37:36.000Z",
+      "assigned_at": "2025-06-18T00:37:36.000Z",
+      "solved_at": "2025-06-20T07:56:28.000Z",
+      "latest_comment_added_at": "2025-06-20T07:56:29.000Z",
+      "reply_time_in_minutes": {
+        "calendar": 85,
+        "business": 16
+      },
+      "first_resolution_time_in_minutes": {
+        "calendar": 3366,
+        "business": 1076
+      },
+      "full_resolution_time_in_minutes": {
+        "calendar": 3366,
+        "business": 1076
+      },
+      "agent_wait_time_in_minutes": {
+        "calendar": 1406,
+        "business": 332
+      },
+      "requester_wait_time_in_minutes": {
+        "calendar": 1960,
+        "business": 745
+      },
+      "on_hold_time_in_minutes": {
+        "calendar": 1815,
+        "business": 675
+      },
+      "reply_time_in_seconds": {
+        "calendar": 5106
+      },
+      "custom_status_updated_at": "2025-06-20T07:56:28.000Z"
+    },
+    "dates": {
+      "assignee_updated_at": "2025-06-20T07:56:28.000Z",
+      "requester_updated_at": "2025-06-20T02:01:59.000Z",
+      "status_updated_at": "2025-06-20T07:56:28.000Z",
+      "initially_assigned_at": "2025-06-18T00:37:36.000Z",
+      "assigned_at": "2025-06-18T00:37:36.000Z",
+      "solved_at": "2025-06-20T07:56:28.000Z",
+      "latest_comment_added_at": "2025-06-20T07:56:29.000Z"
+    },
+    "allow_channelback": false,
+    "allow_attachments": true,
+    "from_messaging_channel": true,
+    "submitter": {
+      "id": 23615374774041,
+      "url": "https://yeoshin.zendesk.com/api/v2/users/23615374774041.json",
+      "name": "이예나",
+      "email": null,
+      "created_at": "2023-10-04T09:41:19.000Z",
+      "updated_at": "2025-06-17T23:50:35.000Z",
+      "time_zone": "Seoul",
+      "iana_time_zone": "Asia/Seoul",
+      "phone": "01055779535",
+      "shared_phone_number": false,
+      "photo": null,
+      "locale_id": 69,
+      "locale": "ko",
+      "organization_id": null,
+      "role": "end-user",
+      "verified": true,
+      "external_id": "28218",
+      "tags": [],
+      "alias": null,
+      "active": true,
+      "shared": false,
+      "shared_agent": false,
+      "last_login_at": null,
+      "two_factor_auth_enabled": null,
+      "signature": null,
+      "details": null,
+      "notes": null,
+      "role_type": null,
+      "custom_role_id": null,
+      "moderator": false,
+      "ticket_restriction": "requested",
+      "only_private_comments": false,
+      "restricted_agent": true,
+      "suspended": false,
+      "default_group_id": null,
+      "report_csv": false,
+      "user_fields": {}
+    },
+    "requester": {
+      "id": 23615374774041,
+      "url": "https://yeoshin.zendesk.com/api/v2/users/23615374774041.json",
+      "name": "이예나",
+      "email": null,
+      "created_at": "2023-10-04T09:41:19.000Z",
+      "updated_at": "2025-06-17T23:50:35.000Z",
+      "time_zone": "Seoul",
+      "iana_time_zone": "Asia/Seoul",
+      "phone": "01055779535",
+      "shared_phone_number": false,
+      "photo": null,
+      "locale_id": 69,
+      "locale": "ko",
+      "organization_id": null,
+      "role": "end-user",
+      "verified": true,
+      "external_id": "28218",
+      "tags": [],
+      "alias": null,
+      "active": true,
+      "shared": false,
+      "shared_agent": false,
+      "last_login_at": null,
+      "two_factor_auth_enabled": null,
+      "signature": null,
+      "details": null,
+      "notes": null,
+      "role_type": null,
+      "custom_role_id": null,
+      "moderator": false,
+      "ticket_restriction": "requested",
+      "only_private_comments": false,
+      "restricted_agent": true,
+      "suspended": false,
+      "default_group_id": null,
+      "report_csv": false,
+      "user_fields": {}
+    },
+    "assignee": {
+      "id": 45773906744473,
+      "url": "https://yeoshin.zendesk.com/api/v2/users/45773906744473.json",
+      "name": "백재윤",
+      "email": "jaeyun_baek@fastlane.kr",
+      "created_at": "2025-04-15T04:19:37.000Z",
+      "updated_at": "2025-07-18T05:25:20.000Z",
+      "time_zone": "Seoul",
+      "iana_time_zone": "Asia/Seoul",
+      "phone": null,
+      "shared_phone_number": null,
+      "photo": {
+        "url": "https://yeoshin.zendesk.com/api/v2/attachments/45774727181337.json",
+        "id": 45774727181337,
+        "file_name": "여신별.png",
+        "content_url": "https://yeoshin.zendesk.com/system/photos/45774727181337/여신별.png",
+        "mapped_content_url": "https://help.yeoshin.co.kr/system/photos/45774727181337/여신별.png",
+        "content_type": "image/png",
+        "size": 2302,
+        "width": 80,
+        "height": 80,
+        "inline": false,
+        "deleted": false,
+        "thumbnails": [
+          {
+            "url": "https://yeoshin.zendesk.com/api/v2/attachments/45774750367001.json",
+            "id": 45774750367001,
+            "file_name": "여신별_thumb.png",
+            "content_url": "https://yeoshin.zendesk.com/system/photos/45774727181337/여신별_thumb.png",
+            "mapped_content_url": "https://help.yeoshin.co.kr/system/photos/45774727181337/여신별_thumb.png",
+            "content_type": "image/png",
+            "size": 890,
+            "width": 32,
+            "height": 32,
+            "inline": false,
+            "deleted": false
+          }
+        ]
+      },
+      "locale_id": 69,
+      "locale": "ko",
+      "organization_id": 9641015580441,
+      "role": "admin",
+      "verified": true,
+      "external_id": null,
+      "tags": [],
+      "alias": "매니저B",
+      "active": true,
+      "shared": false,
+      "shared_agent": false,
+      "last_login_at": "2025-07-18T05:25:16.000Z",
+      "two_factor_auth_enabled": null,
+      "signature": "",
+      "details": "",
+      "notes": "",
+      "role_type": 4,
+      "custom_role_id": 9619866288281,
+      "moderator": true,
+      "ticket_restriction": null,
+      "only_private_comments": false,
+      "restricted_agent": false,
+      "suspended": false,
+      "default_group_id": 24099831262233,
+      "report_csv": true,
+      "user_fields": {}
+    },
+    "collaborator": [],
+    "recipient": null,
+    "group": {
+      "url": "https://yeoshin.zendesk.com/api/v2/groups/24099831262233.json",
+      "id": 24099831262233,
+      "is_public": true,
+      "name": "서비스운영팀",
+      "description": "",
+      "default": true,
+      "deleted": false,
+      "created_at": "2023-10-16T07:32:08.000Z",
+      "updated_at": "2023-10-16T07:32:08.000Z"
+    },
+    "organization": null,
+    "comments": [
+      {
+        "id": 48059640948505,
+        "type": "Comment",
+        "author_id": 23615374774041,
+        "body": "이예나님과의 대화",
+        "html_body": "<div class=\"zd-comment\" dir=\"auto\"><p dir=\"auto\">이예나님과의 대화</p></div>",
+        "plain_body": "이예나님과의 대화",
+        "public": false,
+        "attachments": [],
+        "audit_id": 48059640948249,
+        "ticket_id": 21772,
+        "via": {
+          "channel": "native_messaging",
+          "source": {
+            "from": {},
+            "to": {},
+            "rel": null
+          }
+        },
+        "metadata": {
+          "system": {},
+          "custom": {}
+        },
+        "created_at": "2025-06-17T23:50:36.000Z"
+      },
+      {
+        "id": 48059842109337,
+        "type": "Comment",
+        "author_id": -1,
+        "body": "고객 문의 내용: 미앤미 강남점 아이리쥬란 4월결제 후 방문하고 괜찮은거같아서 또 방문하려고 2번째 결제를 했는데 미앤미 강남에서 전화가왔네요 첫방문시에만 적용되는거라 결제를 취소해달라고요",
+        "html_body": "<div class=\"zd-comment\" dir=\"auto\"><p dir=\"auto\">고객 문의 내용</p></div>",
+        "plain_body": "고객 문의 내용",
+        "public": true,
+        "attachments": [],
+        "audit_id": 48059842109081,
+        "ticket_id": 21772,
+        "via": {
+          "channel": "native_messaging",
+          "source": {
+            "from": {},
+            "to": {},
+            "rel": null
+          }
+        },
+        "metadata": {
+          "system": {},
+          "custom": {}
+        },
+        "created_at": "2025-06-18T00:37:36.000Z"
+      }
+    ]
+  }
+] 
