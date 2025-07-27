@@ -127,16 +127,6 @@ const CsvDownloadButton = ({ tickets, disabled = false }) => {
         )}
       </button>
       
-      {tickets && tickets.length > 0 && (
-        <div style={{ 
-          fontSize: '12px', 
-          color: '#666', 
-          marginTop: '5px',
-          textAlign: 'center'
-        }}>
-          {tickets.length}개 티켓 데이터
-        </div>
-      )}
     </div>
   );
 };

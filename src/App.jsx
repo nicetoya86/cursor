@@ -248,44 +248,6 @@ function App() {
             )}
           </>
         )}
-
-        {/* 푸터 */}
-        <footer className="app-footer">
-          <p>
-            <small>
-              💡 <strong>사용 팁:</strong> 
-              JSON 파일을 업로드한 후 다양한 필터를 사용하여 원하는 티켓을 찾아보세요. 
-              모든 필터링은 실시간으로 적용됩니다.
-            </small>
-          </p>
-          
-          <details style={{ marginTop: '15px' }}>
-            <summary style={{ cursor: 'pointer', color: '#007bff' }}>
-              📋 지원되는 JSON 형식 예시
-            </summary>
-            <div style={{ 
-              backgroundColor: '#f8f9fa', 
-              padding: '15px', 
-              borderRadius: '4px',
-              marginTop: '10px',
-              fontSize: '12px'
-            }}>
-              <pre>{`{
-  "tickets": [
-    {
-      "id": 12345,
-      "subject": "문의 제목",
-      "created_at": "2023-01-01T12:00:00Z",
-      "status": "open",
-      "priority": "normal",
-      "tags": ["tag1", "tag2"],
-      "description": "문의 내용..."
-    }
-  ]
-}`}</pre>
-            </div>
-          </details>
-        </footer>
       </div>
     </div>
   );

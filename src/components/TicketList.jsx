@@ -593,64 +593,51 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-800">검색 결과 ({tickets.length}개)</h3>
+    <div className="search-results-container">
+      <div className="results-header">
+        <h3 className="results-title">검색 결과 ({tickets.length}개)</h3>
       </div>
 
       {/* 개선된 테이블 뷰 */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <thead className="bg-gray-50">
+      <div className="table-container">
+        <table className="results-table">
+          <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                티켓번호
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                생성일
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                제목
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                태그
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                문의 내용
-              </th>
+              <th className="col-ticket-id">티켓번호</th>
+              <th className="col-date">생성일</th>
+              <th className="col-title">제목</th>
+              <th className="col-tags">태그</th>
+              <th className="col-content">문의 내용</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody>
             {tickets.map((ticket, index) => (
-              <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <tr key={ticket.id} className="table-row">
+                <td className="cell-ticket-id">
+                  <span className="ticket-badge">
                     #{ticket.id}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="cell-date">
                   {formatDate(ticket.created_at)}
                 </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900 max-w-xs">
-                    <div title={ticket.subject}>
-                      {truncateText(ticket.subject, 80)}
-                    </div>
+                <td className="cell-title">
+                  <div className="title-content" title={ticket.subject}>
+                    {truncateText(ticket.subject, 80)}
                   </div>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1">
+                <td className="cell-tags">
+                  <div className="tags-container">
                     {(() => {
                       const customerTags = filterCustomerTags(ticket.tags);
                       if (customerTags.length === 0) {
                         return (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-500">
+                          <span className="tag-empty">
                             태그 없음
                           </span>
                         );
                       }
                       
-                      // 모든 태그를 한 줄로 표시하되, 너무 많으면 일부만 표시
                       const displayTags = customerTags.slice(0, 3);
                       const remainingCount = customerTags.length - 3;
                       
@@ -659,13 +646,13 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
                           {displayTags.map((tag, tagIndex) => (
                             <span 
                               key={tagIndex}
-                              className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                              className="tag-item"
                             >
                               {tag.replace('고객_', '')}
                             </span>
                           ))}
                           {remainingCount > 0 && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                            <span className="tag-more">
                               +{remainingCount}
                             </span>
                           )}
@@ -674,12 +661,10 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
                     })()}
                   </div>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900 max-w-md">
-                    <div className="bg-gray-50 border rounded p-3 max-h-24 overflow-y-auto">
-                      <div className="whitespace-pre-wrap break-words text-xs leading-relaxed">
-                        {truncateText(getUserComments(ticket), 200)}
-                      </div>
+                <td className="cell-content">
+                  <div className="content-box">
+                    <div className="content-text">
+                      {truncateText(getUserComments(ticket), 200)}
                     </div>
                   </div>
                 </td>
