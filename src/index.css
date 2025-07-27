@@ -217,20 +217,25 @@ code {
 }
 
 .react-select__multi-value {
-  background-color: #e9ecef !important;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+  border-radius: 12px !important;
 }
 
 .react-select__multi-value__label {
-  color: #495057 !important;
-  font-size: 12px !important;
+  color: white !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  padding: 4px 10px !important;
 }
 
 .react-select__multi-value__remove {
-  color: #6c757d !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 0 12px 12px 0 !important;
+  padding: 4px 6px !important;
 }
 
 .react-select__multi-value__remove:hover {
-  background-color: #dc3545 !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
   color: white !important;
 }
 

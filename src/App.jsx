@@ -186,66 +186,46 @@ function App() {
 
             {/* 분석 결과 토글 */}
             {analyzedTickets.length > 0 && (
-              <div style={{ 
-                textAlign: 'center', 
-                marginBottom: '20px',
-                padding: '20px',
-                backgroundColor: '#e7f3ff',
-                borderRadius: '8px',
-                border: '2px solid #007bff'
-              }}>
-                <div style={{ marginBottom: '15px' }}>
-                  <h4 style={{ color: '#007bff', margin: '0 0 10px 0' }}>
-                    ✅ GPT 분석 완료!
-                  </h4>
-                  <p style={{ margin: '0 0 10px 0', color: '#0066cc' }}>
-                    {analysisSummary && (
-                      <>
-                        총 {analysisSummary.total}개 티켓 중 {analysisSummary.successful}개 성공
-                        {analysisSummary.failed > 0 && `, ${analysisSummary.failed}개 실패`}
-                        {analysisSummary.isMock && ' (모의 분석 모드)'}
-                      </>
-                    )}
-                  </p>
-                </div>
-                <button
+              <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                <button 
+                  className="btn btn-primary"
                   onClick={toggleAnalysisView}
-                  style={{
+                  style={{ 
                     backgroundColor: showAnalyzedResults ? '#28a745' : '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    padding: '12px 24px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    transition: 'background-color 0.3s'
+                    borderColor: showAnalyzedResults ? '#28a745' : '#007bff'
                   }}
                 >
-                  {showAnalyzedResults ? '📊 원본 데이터 보기' : '🤖 GPT 분석 결과 보기'}
+                  {showAnalyzedResults ? '📊 GPT 분석 결과 보기' : '📋 전체 티켓 보기'}
                 </button>
+                {analysisSummary && (
+                  <div style={{ 
+                    marginTop: '15px', 
+                    padding: '15px', 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    color: '#495057'
+                  }}>
+                    <strong>📈 분석 요약:</strong> {analysisSummary}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* 분석 완료 후에만 필터링 폼과 티켓 목록 표시 */}
-            {analyzedTickets.length > 0 && (
-              <>
-                {/* 필터링 폼 */}
-                <FilterForm 
-                  tickets={allTickets}
-                  onFilter={handleFilter}
-                  suggestions={suggestions}
-                />
+            {/* 필터링 폼 - 데이터가 있으면 항상 표시 */}
+            <FilterForm 
+              tickets={allTickets}
+              onFilter={handleFilter}
+              suggestions={suggestions}
+            />
 
-                {/* 티켓 목록 */}
-                <TicketList 
-                  tickets={showAnalyzedResults ? analyzedTickets : filteredTickets}
-                  loading={isLoading}
-                  error={null}
-                  isAnalyzed={showAnalyzedResults}
-                />
-              </>
-            )}
+            {/* 티켓 목록 - 데이터가 있으면 항상 표시 */}
+            <TicketList 
+              tickets={showAnalyzedResults ? analyzedTickets : filteredTickets}
+              loading={isLoading}
+              error={null}
+              isAnalyzed={showAnalyzedResults}
+            />
           </>
         )}
       </div>
