@@ -131,6 +131,170 @@ code {
   margin-bottom: 2px;
 }
 
+/* 필터 폼 스타일 */
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.date-range-container {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.date-input {
+  flex: 1;
+  min-width: 150px;
+}
+
+.date-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.quick-dates {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.quick-date-btn {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.quick-date-btn:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.quick-date-btn:active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.filter-count {
+  background-color: #007bff;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* React Select 커스터마이징 */
+.react-select-container {
+  font-size: 14px;
+}
+
+.react-select__control {
+  border-color: #ddd !important;
+  min-height: 38px;
+}
+
+.react-select__control:hover {
+  border-color: #adb5bd !important;
+}
+
+.react-select__control--is-focused {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+
+.react-select__multi-value {
+  background-color: #e9ecef !important;
+}
+
+.react-select__multi-value__label {
+  color: #495057 !important;
+  font-size: 12px !important;
+}
+
+.react-select__multi-value__remove {
+  color: #6c757d !important;
+}
+
+.react-select__multi-value__remove:hover {
+  background-color: #dc3545 !important;
+  color: white !important;
+}
+
+/* 테이블 스타일 개선 */
+.ticket-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.ticket-table th {
+  background-color: #f9fafb;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.ticket-table td {
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+
+.ticket-table tr:hover {
+  background-color: #f9fafb;
+}
+
+.ticket-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* 태그 스타일 */
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tag-customer {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.tag-empty {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.tag-more {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+/* 반응형 디자인 */
+@media (min-width: 768px) {
+  .filter-grid {
+    grid-template-columns: 1fr 2fr 1fr;
+    align-items: start;
+  }
+}
+
 @media (max-width: 768px) {
   .container {
     padding: 10px;
@@ -143,5 +307,18 @@ code {
   .table th,
   .table td {
     padding: 8px 4px;
+  }
+  
+  .date-range-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .date-input {
+    min-width: 100%;
+  }
+  
+  .quick-dates {
+    justify-content: center;
   }
 } 

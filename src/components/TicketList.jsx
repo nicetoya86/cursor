@@ -600,102 +600,85 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
 
       {/* 개선된 테이블 뷰 */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
+        <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-20">
-                <div className="flex items-center">
-                  <span className="mr-1">🎫</span>
-                  티켓번호
-                </div>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                티켓번호
               </th>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
-                <div className="flex items-center">
-                  <span className="mr-1">📅</span>
-                  생성일
-                </div>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                생성일
               </th>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-64">
-                <div className="flex items-center">
-                  <span className="mr-1">📋</span>
-                  제목
-                </div>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                제목
               </th>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">
-                <div className="flex items-center">
-                  <span className="mr-1">🏷️</span>
-                  태그
-                </div>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                태그
               </th>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                <div className="flex items-center">
-                  <span className="mr-1">💬</span>
-                  문의 내용
-                </div>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                문의 내용
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-200">
             {tickets.map((ticket, index) => (
-              <tr 
-                key={ticket.id} 
-                className={`hover:bg-blue-50 transition-colors duration-150 ${
-                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                }`}
-              >
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                      #{ticket.id}
-                    </span>
-                  </div>
+              <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    #{ticket.id}
+                  </span>
                 </td>
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900 font-mono">
-                    {formatDate(ticket.created_at)}
-                  </div>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {formatDate(ticket.created_at)}
                 </td>
-                <td className="px-4 py-4">
-                  <div className="text-sm text-gray-900 font-medium leading-5">
-                    <div className="max-w-xs" title={ticket.subject}>
-                      {truncateText(ticket.subject, 60)}
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900 max-w-xs">
+                    <div title={ticket.subject}>
+                      {truncateText(ticket.subject, 80)}
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-4">
-                  <div className="flex flex-wrap gap-1 max-w-40">
+                <td className="px-6 py-4">
+                  <div className="flex flex-wrap gap-1">
                     {(() => {
                       const customerTags = filterCustomerTags(ticket.tags);
-                      return customerTags.length > 0 ? (
-                        customerTags.slice(0, 2).map((tag, tagIndex) => (
-                          <span 
-                            key={tagIndex} 
-                            className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 border border-green-200"
-                          >
-                            {tag.replace('고객_', '')}
+                      if (customerTags.length === 0) {
+                        return (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-500">
+                            태그 없음
                           </span>
-                        ))
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs text-gray-400 bg-gray-100 border border-gray-200">
-                          태그 없음
-                        </span>
-                      );
-                    })()}
-                    {(() => {
-                      const customerTags = filterCustomerTags(ticket.tags);
-                      return customerTags.length > 2 && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs text-gray-500 bg-gray-100 border border-gray-200">
-                          +{customerTags.length - 2}
-                        </span>
+                        );
+                      }
+                      
+                      // 모든 태그를 한 줄로 표시하되, 너무 많으면 일부만 표시
+                      const displayTags = customerTags.slice(0, 3);
+                      const remainingCount = customerTags.length - 3;
+                      
+                      return (
+                        <>
+                          {displayTags.map((tag, tagIndex) => (
+                            <span 
+                              key={tagIndex}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                            >
+                              {tag.replace('고객_', '')}
+                            </span>
+                          ))}
+                          {remainingCount > 0 && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                              +{remainingCount}
+                            </span>
+                          )}
+                        </>
                       );
                     })()}
                   </div>
                 </td>
-                <td className="px-4 py-4">
-                  <div className="max-w-lg">
-                    <div className="text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-32 overflow-y-auto shadow-sm">
-                      <div className="whitespace-pre-wrap break-words leading-relaxed">
-                        {getUserComments(ticket)}
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900 max-w-md">
+                    <div className="bg-gray-50 border rounded p-3 max-h-24 overflow-y-auto">
+                      <div className="whitespace-pre-wrap break-words text-xs leading-relaxed">
+                        {truncateText(getUserComments(ticket), 200)}
                       </div>
                     </div>
                   </div>
@@ -737,25 +720,40 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
               <div className="flex items-start space-x-2">
                 <span className="text-gray-400 mt-0.5">🏷️</span>
                 <div className="flex-1">
-                  {(() => {
-                    const customerTags = filterCustomerTags(ticket.tags);
-                    return customerTags.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {customerTags.map((tag, tagIndex) => (
-                          <span 
-                            key={tagIndex} 
-                            className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 border border-green-200"
-                          >
-                            {tag.replace('고객_', '')}
+                  <div className="flex flex-wrap gap-1">
+                    {(() => {
+                      const customerTags = filterCustomerTags(ticket.tags);
+                      if (customerTags.length === 0) {
+                        return (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-500">
+                            태그 없음
                           </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-1 rounded-md text-xs text-gray-400 bg-gray-100 border border-gray-200">
-                        태그 없음
-                      </span>
-                    );
-                  })()}
+                        );
+                      }
+                      
+                      // 모바일에서도 최대 3개까지만 표시
+                      const displayTags = customerTags.slice(0, 3);
+                      const remainingCount = customerTags.length - 3;
+                      
+                      return (
+                        <>
+                          {displayTags.map((tag, tagIndex) => (
+                            <span 
+                              key={tagIndex}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                            >
+                              {tag.replace('고객_', '')}
+                            </span>
+                          ))}
+                          {remainingCount > 0 && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                              +{remainingCount}
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             </div>
