@@ -1,5 +1,5 @@
 {
-  "name": "zendesk-ticket-manager",
+  "name": "zendesk-analyzer",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
