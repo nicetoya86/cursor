@@ -8,6 +8,9 @@ import { useJsonTickets } from './hooks/useJsonTickets';
 import './App.css';
 
 function App() {
+  // 임시 테스트: 간단한 화면 먼저 표시
+  const [showFullApp, setShowFullApp] = useState(false);
+  
   const {
     allTickets,
     filteredTickets,
@@ -72,6 +75,30 @@ function App() {
   const handleFilter = useCallback((filters) => {
     applyFilters(filters);
   }, [applyFilters]);
+
+  // 임시 테스트 화면
+  if (!showFullApp) {
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h1>🎫 Zendesk 티켓 분석기</h1>
+        <p>배포 테스트 성공! 🎉</p>
+        <button 
+          onClick={() => setShowFullApp(true)}
+          style={{ 
+            padding: '10px 20px', 
+            fontSize: '16px', 
+            backgroundColor: '#007bff', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '5px', 
+            cursor: 'pointer' 
+          }}
+        >
+          전체 앱 실행
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="App">
