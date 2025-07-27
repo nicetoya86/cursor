@@ -108,7 +108,7 @@ const JsonUploader = ({ onDataLoaded, onError }) => {
   };
 
   // JSON 데이터 파싱 및 검증 (더 유연하게)
-  const parseJsonData = (jsonData) => {
+  const parseJsonData = useCallback((jsonData) => {
     try {
       console.log('JSON 파싱 시작, 데이터 타입:', typeof jsonData);
       
@@ -322,7 +322,7 @@ const JsonUploader = ({ onDataLoaded, onError }) => {
       console.error('JSON 파싱 오류 상세:', error);
       throw error; // 원본 오류 그대로 전달
     }
-  };
+  }, []); // parseJsonData는 외부 의존성이 없음
 
   // 파일 처리 함수
   const processFile = useCallback(async (file) => {
