@@ -141,7 +141,7 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
     let match;
     
     while ((match = timeStampPattern.exec(allContent)) !== null) {
-      const [fullMatch, timestamp, author, content] = match;
+      const [, , author, content] = match;
       const cleanAuthor = author.trim();
       const cleanContent = content.trim();
       
@@ -554,29 +554,7 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
     return cleaned;
   };
 
-  // 상태별 색상
-  const getStatusColor = (status) => {
-    const colors = {
-      'new': '#28a745',
-      'open': '#007bff',
-      'pending': '#ffc107',
-      'hold': '#6c757d',
-      'solved': '#17a2b8',
-      'closed': '#6c757d'
-    };
-    return colors[status] || '#6c757d';
-  };
-
-  // 우선순위별 색상
-  const getPriorityColor = (priority) => {
-    const colors = {
-      'urgent': '#dc3545',
-      'high': '#fd7e14',
-      'normal': '#28a745',
-      'low': '#6c757d'
-    };
-    return colors[priority] || '#6c757d';
-  };
+  // 상태별 색상 및 우선순위별 색상 함수는 현재 사용되지 않으므로 제거됨
 
   if (loading) {
     return (

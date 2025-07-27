@@ -384,7 +384,7 @@ const JsonUploader = ({ onDataLoaded, onError }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [onDataLoaded, onError]);
+  }, [onDataLoaded, onError, parseJsonData]);
 
   // 드래그 앤 드롭 이벤트 핸들러
   const handleDragOver = useCallback((e) => {
@@ -526,7 +526,7 @@ const JsonUploader = ({ onDataLoaded, onError }) => {
       console.error('수동 수정 실패:', error);
       alert(`${method} 방법으로 수정 실패: ${error.message}`);
     }
-  }, [filePreview, fileName, onDataLoaded]);
+  }, [filePreview, fileName, onDataLoaded, parseJsonData]);
 
   return (
     <div className="card">

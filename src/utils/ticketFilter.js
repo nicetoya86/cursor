@@ -1,4 +1,4 @@
-import { format, isWithinInterval, parseISO, isValid } from 'date-fns';
+import { isWithinInterval, parseISO, isValid } from 'date-fns';
 
 // 날짜 파싱 및 검증
 const parseDate = (dateString) => {

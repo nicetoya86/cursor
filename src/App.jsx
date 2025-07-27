@@ -12,7 +12,6 @@ function App() {
     allTickets,
     filteredTickets,
     fileName,
-    stats,
     suggestions,
     isLoading,
     error,
