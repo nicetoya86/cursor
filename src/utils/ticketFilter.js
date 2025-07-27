@@ -27,10 +27,20 @@ const matchesTags = (ticketTags, searchTags) => {
   
   // 검색 태그 중 하나라도 티켓 태그에 포함되면 매칭
   return searchTags.some(searchTag => {
-    const searchValue = (searchTag.value || searchTag).toLowerCase();
-    return ticketTags.some(ticketTag => 
-      ticketTag.toLowerCase().includes(searchValue)
-    );
+    // React Select에서 오는 객체 형태 또는 문자열 처리
+    let searchValue = '';
+    if (typeof searchTag === 'object' && searchTag !== null) {
+      searchValue = (searchTag.value || searchTag.label || '').toString().toLowerCase();
+    } else {
+      searchValue = (searchTag || '').toString().toLowerCase();
+    }
+    
+    if (!searchValue) return false;
+    
+    return ticketTags.some(ticketTag => {
+      const tagValue = (ticketTag || '').toString().toLowerCase();
+      return tagValue.includes(searchValue) || searchValue.includes(tagValue);
+    });
   });
 };
 
@@ -45,6 +55,7 @@ const matchesDateRange = (ticketDate, startDate, endDate) => {
     if (startDate && endDate) {
       // 시작일과 종료일 모두 있는 경우
       const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0); // 시작일의 시작시간으로 설정
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999); // 종료일의 끝시간으로 설정
       
@@ -52,11 +63,12 @@ const matchesDateRange = (ticketDate, startDate, endDate) => {
     } else if (startDate) {
       // 시작일만 있는 경우
       const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0); // 시작일의 시작시간으로 설정
       return parsedTicketDate >= start;
     } else if (endDate) {
       // 종료일만 있는 경우
       const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
+      end.setHours(23, 59, 59, 999); // 종료일의 끝시간으로 설정
       return parsedTicketDate <= end;
     }
   } catch (error) {
@@ -75,7 +87,55 @@ const matchesText = (ticket, searchText) => {
   const subject = (ticket.subject || '').toLowerCase();
   const description = (ticket.description || '').toLowerCase();
   
-  return subject.includes(searchLower) || description.includes(searchLower);
+  // getUserComments 함수 결과도 검색 대상에 포함
+  let comments = '';
+  try {
+    // getUserComments 로직을 간단하게 구현
+    let allComments = [];
+    
+    const findComments = (obj) => {
+      if (!obj) return;
+      
+      if (Array.isArray(obj)) {
+        obj.forEach(item => findComments(item));
+      } else if (typeof obj === 'object') {
+        if (obj.comments && Array.isArray(obj.comments)) {
+          allComments = allComments.concat(obj.comments);
+          obj.comments.forEach(comment => findComments(comment));
+        }
+        
+        if ((obj.body || obj.plain_body) && obj.hasOwnProperty('author_id')) {
+          allComments.push(obj);
+        }
+        
+        Object.values(obj).forEach(value => {
+          if (typeof value === 'object') {
+            findComments(value);
+          }
+        });
+      }
+    };
+    
+    findComments(ticket);
+    
+    // 모든 댓글 내용을 하나의 문자열로 합치기
+    allComments.forEach(comment => {
+      if (comment.body) {
+        comments += comment.body + ' ';
+      }
+      if (comment.plain_body && comment.plain_body !== comment.body) {
+        comments += comment.plain_body + ' ';
+      }
+    });
+    
+    comments = comments.toLowerCase();
+  } catch (error) {
+    console.warn('댓글 검색 중 오류:', error);
+  }
+  
+  return subject.includes(searchLower) || 
+         description.includes(searchLower) || 
+         comments.includes(searchLower);
 };
 
 // 상태 필터링

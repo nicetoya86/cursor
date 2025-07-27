@@ -102,7 +102,6 @@ const FilterForm = ({ tickets, onFilter, suggestions }) => {
           <label className="form-label">생성일 범위</label>
           <div className="date-range-container">
             <div className="date-input">
-              <label className="date-label">시작일</label>
               <DatePicker
                 selected={filters.startDate}
                 onChange={(date) => handleFilterChange('startDate', date)}
@@ -115,7 +114,6 @@ const FilterForm = ({ tickets, onFilter, suggestions }) => {
               />
             </div>
             <div className="date-input">
-              <label className="date-label">종료일</label>
               <DatePicker
                 selected={filters.endDate}
                 onChange={(date) => handleFilterChange('endDate', date)}
