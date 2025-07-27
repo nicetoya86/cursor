@@ -184,7 +184,17 @@ export const filterTickets = (tickets, filters) => {
     priority
   } = filters || {};
 
-  return tickets.filter(ticket => {
+  console.log('🔍 필터링 실행:', {
+    totalTickets: tickets.length,
+    startDate,
+    endDate,
+    tags: tags?.length || 0,
+    searchText: searchText?.trim() || '',
+    status: status?.length || 0,
+    priority: priority?.length || 0
+  });
+
+  const results = tickets.filter(ticket => {
     if (!ticket) return false;
 
     // 전화 관련 제목 제외
@@ -219,6 +229,9 @@ export const filterTickets = (tickets, filters) => {
 
     return true;
   });
+
+  console.log(`🎯 필터링 완료: ${results.length}/${tickets.length}개 티켓 반환`);
+  return results;
 };
 
 // 티켓 정렬 함수

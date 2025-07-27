@@ -211,22 +211,26 @@ function App() {
                 )}
               </div>
             )}
-
-            {/* 필터링 폼 - 데이터가 있으면 항상 표시 */}
-            <FilterForm 
-              tickets={allTickets}
-              onFilter={handleFilter}
-              suggestions={suggestions}
-            />
-
-            {/* 티켓 목록 - 데이터가 있으면 항상 표시 */}
-            <TicketList 
-              tickets={showAnalyzedResults ? analyzedTickets : filteredTickets}
-              loading={isLoading}
-              error={null}
-              isAnalyzed={showAnalyzedResults}
-            />
           </>
+        )}
+
+        {/* 필터링 폼 - 데이터가 있으면 항상 표시 (분석 모드와 무관) */}
+        {hasData && (
+          <FilterForm 
+            tickets={allTickets}
+            onFilter={handleFilter}
+            suggestions={suggestions}
+          />
+        )}
+
+        {/* 티켓 목록 - 데이터가 있으면 항상 표시 (분석 모드와 무관) */}
+        {hasData && (
+          <TicketList 
+            tickets={showAnalyzedResults && analyzedTickets.length > 0 ? analyzedTickets : filteredTickets}
+            loading={isLoading}
+            error={null}
+            isAnalyzed={showAnalyzedResults && analyzedTickets.length > 0}
+          />
         )}
       </div>
     </div>

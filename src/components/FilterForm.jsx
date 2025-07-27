@@ -13,10 +13,12 @@ const FilterForm = ({ tickets, onFilter, suggestions }) => {
 
   // 필터 변경 시 자동으로 필터링 적용
   useEffect(() => {
+    console.log('🔧 FilterForm - 필터 변경됨:', filters);
     onFilter(filters);
   }, [filters, onFilter]);
 
   const handleFilterChange = (key, value) => {
+    console.log(`🔧 필터 변경: ${key} =`, value);
     setFilters(prev => ({
       ...prev,
       [key]: value

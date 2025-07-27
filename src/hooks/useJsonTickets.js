@@ -47,22 +47,23 @@ export const useJsonTickets = () => {
   // 필터링 적용
   const applyFilters = useCallback((filters) => {
     try {
+      console.log('🎯 applyFilters 호출됨:', filters);
       setCurrentFilters(filters);
       
       if (!allTickets.length) {
+        console.log('❌ 티켓 데이터 없음');
         setFilteredTickets([]);
         return;
       }
 
       // 필터링 적용
       const filtered = filterTickets(allTickets, filters);
+      console.log(`✅ 필터링 결과: ${filtered.length}/${allTickets.length}개 티켓`);
       
       // 정렬 적용
       const sorted = sortTickets(filtered, sortConfig.sortBy, sortConfig.sortOrder);
       
       setFilteredTickets(sorted);
-      
-      console.log(`필터링 결과: ${filtered.length}/${allTickets.length}개 티켓`);
       
     } catch (err) {
       console.error('필터링 오류:', err);
