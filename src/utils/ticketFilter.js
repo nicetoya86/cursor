@@ -20,36 +20,78 @@ const parseDate = (dateString) => {
   }
 };
 
-// 태그 매칭 검사
+// 태그 매칭 검사 (고객_ 접두사 일관 처리)
 const matchesTags = (ticketTags, searchTags) => {
   if (!searchTags || searchTags.length === 0) return true;
   if (!ticketTags || ticketTags.length === 0) return false;
+  
+  console.log('🏷️ 태그 매칭 검사:', {
+    ticketTags,
+    searchTags
+  });
+  
+  // 고객 태그만 필터링하는 함수
+  const filterCustomerTags = (tags) => {
+    if (!tags || !Array.isArray(tags)) return [];
+    return tags.filter(tag => tag && tag.startsWith('고객_'));
+  };
+  
+  // 티켓의 고객 태그만 추출
+  const customerTicketTags = filterCustomerTags(ticketTags);
   
   // 검색 태그 중 하나라도 티켓 태그에 포함되면 매칭
   return searchTags.some(searchTag => {
     // React Select에서 오는 객체 형태 또는 문자열 처리
     let searchValue = '';
     if (typeof searchTag === 'object' && searchTag !== null) {
-      searchValue = (searchTag.value || searchTag.label || '').toString().toLowerCase();
+      searchValue = (searchTag.value || searchTag.label || '').toString();
     } else {
-      searchValue = (searchTag || '').toString().toLowerCase();
+      searchValue = (searchTag || '').toString();
     }
     
     if (!searchValue) return false;
     
-    return ticketTags.some(ticketTag => {
-      const tagValue = (ticketTag || '').toString().toLowerCase();
-      return tagValue.includes(searchValue) || searchValue.includes(tagValue);
+    // 검색값이 "고객_"로 시작하지 않으면 추가
+    if (!searchValue.startsWith('고객_')) {
+      searchValue = '고객_' + searchValue;
+    }
+    
+    console.log('🔍 검색 태그:', searchValue);
+    
+    return customerTicketTags.some(ticketTag => {
+      const tagValue = (ticketTag || '').toString();
+      console.log('📋 티켓 태그:', tagValue);
+      
+      // 정확한 매칭 또는 부분 매칭
+      const exactMatch = tagValue === searchValue;
+      const partialMatch = tagValue.includes(searchValue) || searchValue.includes(tagValue);
+      
+      if (exactMatch || partialMatch) {
+        console.log('✅ 태그 매칭 성공:', tagValue, '←→', searchValue);
+        return true;
+      }
+      
+      return false;
     });
   });
 };
 
-// 날짜 범위 검사
+// 날짜 범위 검사 (디버깅 로그 추가)
 const matchesDateRange = (ticketDate, startDate, endDate) => {
   if (!startDate && !endDate) return true;
   
   const parsedTicketDate = parseDate(ticketDate);
-  if (!parsedTicketDate) return false;
+  if (!parsedTicketDate) {
+    console.log('❌ 날짜 파싱 실패:', ticketDate);
+    return false;
+  }
+  
+  console.log('📅 날짜 범위 검사:', {
+    ticketDate: ticketDate,
+    parsedTicketDate: parsedTicketDate.toISOString(),
+    startDate: startDate,
+    endDate: endDate
+  });
   
   try {
     if (startDate && endDate) {
@@ -59,33 +101,48 @@ const matchesDateRange = (ticketDate, startDate, endDate) => {
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999); // 종료일의 끝시간으로 설정
       
-      return isWithinInterval(parsedTicketDate, { start, end });
+      const result = isWithinInterval(parsedTicketDate, { start, end });
+      console.log('📅 날짜 범위 결과:', result, `${start.toISOString()} ~ ${end.toISOString()}`);
+      return result;
     } else if (startDate) {
       // 시작일만 있는 경우
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0); // 시작일의 시작시간으로 설정
-      return parsedTicketDate >= start;
+      const result = parsedTicketDate >= start;
+      console.log('📅 시작일 이후 결과:', result, `>= ${start.toISOString()}`);
+      return result;
     } else if (endDate) {
       // 종료일만 있는 경우
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999); // 종료일의 끝시간으로 설정
-      return parsedTicketDate <= end;
+      const result = parsedTicketDate <= end;
+      console.log('📅 종료일 이전 결과:', result, `<= ${end.toISOString()}`);
+      return result;
     }
   } catch (error) {
-    console.warn('날짜 범위 검사 실패:', error);
+    console.error('❌ 날짜 범위 검사 오류:', error);
     return false;
   }
   
   return true;
 };
 
-// 텍스트 검색 (문의 내용에서만 검색)
+// 텍스트 검색 (문의 내용에서만 검색, GPT 분석 결과 포함)
 const matchesText = (ticket, searchText) => {
   if (!searchText || searchText.trim() === '') return true;
   
   const searchLower = searchText.toLowerCase();
   
-  // 오직 getUserComments 결과에서만 검색 (제목, 설명 제외)
+  // 1순위: GPT 분석 결과가 있으면 해당 내용에서 검색
+  if (ticket.gptAnalysis && ticket.gptAnalysis.extractedInquiry) {
+    const gptContent = ticket.gptAnalysis.extractedInquiry.toLowerCase();
+    if (gptContent.includes(searchLower)) {
+      console.log(`티켓 ${ticket.id}: GPT 분석 결과에서 텍스트 매칭`);
+      return true;
+    }
+  }
+  
+  // 2순위: 기존 방식으로 댓글에서 검색
   let comments = '';
   try {
     // getUserComments 로직을 간단하게 구현
@@ -125,13 +182,21 @@ const matchesText = (ticket, searchText) => {
       }
     });
     
+    // description과 subject도 포함 (기존 로직 유지)
+    if (ticket.description) {
+      comments += ticket.description + ' ';
+    }
+    if (ticket.subject && !ticket.subject.includes('님과의 대화')) {
+      comments += ticket.subject + ' ';
+    }
+    
     comments = comments.toLowerCase();
   } catch (error) {
     console.warn('댓글 추출 실패:', error);
     comments = '';
   }
   
-  // 오직 문의 내용(comments)에서만 검색
+  // 댓글 내용에서 검색
   return comments.includes(searchLower);
 };
 
@@ -194,36 +259,46 @@ export const filterTickets = (tickets, filters) => {
   const results = tickets.filter(ticket => {
     if (!ticket) return false;
 
+    const ticketId = ticket.id || 'unknown';
+    console.log(`🎫 티켓 ${ticketId} 필터링 시작`);
+
     // 전화 관련 제목 제외
     if (isCallRelatedTitle(ticket.subject)) {
+      console.log(`❌ 티켓 ${ticketId}: 전화 관련 제목으로 제외`);
       return false;
     }
 
     // 날짜 범위 검사
     if (!matchesDateRange(ticket.created_at, startDate, endDate)) {
+      console.log(`❌ 티켓 ${ticketId}: 날짜 범위 불일치`);
       return false;
     }
 
     // 태그 검사
     if (!matchesTags(ticket.tags, tags)) {
+      console.log(`❌ 티켓 ${ticketId}: 태그 불일치`);
       return false;
     }
 
     // 텍스트 검색
     if (!matchesText(ticket, searchText)) {
+      console.log(`❌ 티켓 ${ticketId}: 텍스트 검색 불일치`);
       return false;
     }
 
     // 상태 필터
     if (!matchesStatus(ticket.status, status)) {
+      console.log(`❌ 티켓 ${ticketId}: 상태 불일치`);
       return false;
     }
 
     // 우선순위 필터
     if (!matchesPriority(ticket.priority, priority)) {
+      console.log(`❌ 티켓 ${ticketId}: 우선순위 불일치`);
       return false;
     }
 
+    console.log(`✅ 티켓 ${ticketId}: 모든 필터 통과`);
     return true;
   });
 
@@ -319,7 +394,7 @@ export const getTicketStats = (tickets) => {
   return stats;
 };
 
-// 검색 제안 생성
+// 검색 제안 생성 (고객 태그만 추출하고 접두사 제거)
 export const getSearchSuggestions = (tickets) => {
   if (!tickets || !Array.isArray(tickets)) return {};
 
@@ -334,9 +409,17 @@ export const getSearchSuggestions = (tickets) => {
   const prioritySet = new Set();
 
   tickets.forEach(ticket => {
-    // 태그 수집
+    // 고객 태그만 수집하고 접두사 제거
     if (ticket.tags && Array.isArray(ticket.tags)) {
-      ticket.tags.forEach(tag => tagSet.add(tag));
+      ticket.tags.forEach(tag => {
+        if (tag && tag.startsWith('고객_')) {
+          // "고객_" 접두사 제거하여 저장
+          const cleanTag = tag.replace('고객_', '');
+          if (cleanTag.trim()) {
+            tagSet.add(cleanTag);
+          }
+        }
+      });
     }
 
     // 상태 수집
@@ -350,9 +433,17 @@ export const getSearchSuggestions = (tickets) => {
     }
   });
 
+  // 태그는 접두사가 제거된 형태로 제공 (필터링 시 자동으로 "고객_" 추가됨)
   suggestions.tags = Array.from(tagSet).map(tag => ({ value: tag, label: tag }));
   suggestions.statuses = Array.from(statusSet).map(status => ({ value: status, label: status }));
   suggestions.priorities = Array.from(prioritySet).map(priority => ({ value: priority, label: priority }));
+
+  console.log('🔧 검색 제안 생성:', {
+    tagsCount: suggestions.tags.length,
+    statusesCount: suggestions.statuses.length,
+    prioritiesCount: suggestions.priorities.length,
+    sampleTags: suggestions.tags.slice(0, 5)
+  });
 
   return suggestions;
 }; 
