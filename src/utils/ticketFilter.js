@@ -155,89 +155,114 @@ const matchesDateRange = (ticketDate, startDate, endDate) => {
   return true;
 };
 
-// 텍스트 검색 (문의 내용에서만 검색, GPT 분석 결과 포함) - 개선된 버전
+// 텍스트 검색 (정확한 Like 검색, 문의 내용만) - 개선된 버전
 const matchesText = (ticket, searchText) => {
   if (!searchText || searchText.trim() === '') return true;
   
   const searchLower = searchText.toLowerCase().trim();
   const ticketId = ticket.id || 'unknown';
   
-  console.log(`🔍 티켓 ${ticketId} 텍스트 검색 시작: "${searchText}"`);
+  console.log(`🔍 티켓 ${ticketId} 정확한 텍스트 검색 시작: "${searchText}"`);
   
-  // 1순위: GPT 분석 결과가 있으면 해당 내용에서 검색
+  let contentToSearch = '';
+  
+  // 1순위: GPT 분석 결과가 있으면 해당 내용만 사용 (가장 정확한 문의 내용)
   if (ticket.gptAnalysis && ticket.gptAnalysis.extractedInquiry) {
-    const gptContent = ticket.gptAnalysis.extractedInquiry.toLowerCase();
-    console.log(`🤖 티켓 ${ticketId} GPT 분석 결과 확인 (${gptContent.length}자)`);
-    
-    if (gptContent.includes(searchLower)) {
-      console.log(`✅ 티켓 ${ticketId}: GPT 분석 결과에서 텍스트 매칭 성공`);
-      return true;
-    } else {
-      console.log(`❌ 티켓 ${ticketId}: GPT 분석 결과에서 텍스트 매칭 실패`);
-    }
+    contentToSearch = ticket.gptAnalysis.extractedInquiry;
+    console.log(`🤖 티켓 ${ticketId} GPT 분석 결과 사용 (${contentToSearch.length}자)`);
   } else {
-    console.log(`ℹ️ 티켓 ${ticketId}: GPT 분석 결과 없음`);
-  }
-  
-  // 2순위: 기존 방식으로 댓글에서 검색
-  let comments = '';
-  try {
-    // getUserComments 로직을 간단하게 구현
-    let allComments = [];
+    // 2순위: GPT 분석 결과가 없으면 TicketList의 getUserComments와 동일한 로직 사용
+    console.log(`ℹ️ 티켓 ${ticketId}: GPT 분석 결과 없음, 원본 댓글에서 추출`);
     
-    const findComments = (obj) => {
-      if (!obj) return;
+    try {
+      // TicketList의 getUserComments와 동일한 로직
+      let allComments = [];
       
-      if (Array.isArray(obj)) {
-        obj.forEach(item => findComments(item));
-      } else if (typeof obj === 'object') {
-        if (obj.comments && Array.isArray(obj.comments)) {
-          allComments = allComments.concat(obj.comments);
-          obj.comments.forEach(comment => findComments(comment));
-        }
+      const findComments = (obj) => {
+        if (!obj) return;
         
-        if ((obj.body || obj.plain_body) && obj.hasOwnProperty('author_id')) {
-          allComments.push(obj);
-        }
-        
-        Object.values(obj).forEach(value => {
-          if (typeof value === 'object') {
-            findComments(value);
+        if (Array.isArray(obj)) {
+          obj.forEach(item => findComments(item));
+        } else if (typeof obj === 'object') {
+          if (obj.comments && Array.isArray(obj.comments)) {
+            allComments = allComments.concat(obj.comments);
+            obj.comments.forEach(comment => findComments(comment));
           }
-        });
+          
+          if ((obj.body || obj.plain_body) && obj.hasOwnProperty('author_id')) {
+            allComments.push(obj);
+          }
+          
+          Object.values(obj).forEach(value => {
+            if (typeof value === 'object') {
+              findComments(value);
+            }
+          });
+        }
+      };
+      
+      findComments(ticket);
+      
+      // 고객 문의 내용만 추출 (시스템 메시지, BOT 메시지 제외)
+      const excludeAuthors = ['여신BOT', '매니저L', '매니저B', '매니저D', 'Matrix_bot'];
+      let customerContent = '';
+      
+      allComments.forEach(comment => {
+        if (comment.body) {
+          // author_id 확인하여 고객 댓글만 포함
+          const isSystemMessage = excludeAuthors.some(excludeAuthor => 
+            comment.body.includes(excludeAuthor)
+          );
+          
+          if (!isSystemMessage) {
+            customerContent += comment.body + ' ';
+          }
+        }
+        if (comment.plain_body && comment.plain_body !== comment.body) {
+          const isSystemMessage = excludeAuthors.some(excludeAuthor => 
+            comment.plain_body.includes(excludeAuthor)
+          );
+          
+          if (!isSystemMessage) {
+            customerContent += comment.plain_body + ' ';
+          }
+        }
+      });
+      
+      // description은 고객 문의일 가능성이 높으므로 포함
+      if (ticket.description && ticket.description.trim()) {
+        customerContent += ticket.description + ' ';
       }
-    };
-    
-    findComments(ticket);
-    
-    allComments.forEach(comment => {
-      if (comment.body) {
-        comments += comment.body + ' ';
-      }
-      if (comment.plain_body && comment.plain_body !== comment.body) {
-        comments += comment.plain_body + ' ';
-      }
-    });
-    
-    // description과 subject도 포함 (기존 로직 유지)
-    if (ticket.description) {
-      comments += ticket.description + ' ';
+      
+      contentToSearch = customerContent.trim();
+      console.log(`📝 티켓 ${ticketId} 고객 문의 내용 추출 (${contentToSearch.length}자)`);
+    } catch (error) {
+      console.warn(`❌ 티켓 ${ticketId} 댓글 추출 실패:`, error);
+      contentToSearch = '';
     }
-    if (ticket.subject && !ticket.subject.includes('님과의 대화')) {
-      comments += ticket.subject + ' ';
-    }
-    
-    comments = comments.toLowerCase().trim();
-    console.log(`📝 티켓 ${ticketId} 추출된 댓글 내용 (${comments.length}자): ${comments.substring(0, 100)}...`);
-  } catch (error) {
-    console.warn(`❌ 티켓 ${ticketId} 댓글 추출 실패:`, error);
-    comments = '';
   }
   
-  // 댓글 내용에서 검색
-  const result = comments.includes(searchLower);
-  console.log(`${result ? '✅' : '❌'} 티켓 ${ticketId} 텍스트 검색 ${result ? '성공' : '실패'}`);
-  return result;
+  if (!contentToSearch) {
+    console.log(`❌ 티켓 ${ticketId}: 검색할 내용 없음`);
+    return false;
+  }
+  
+  // 정확한 Like 검색 수행
+  const contentLower = contentToSearch.toLowerCase();
+  
+  // 단어 경계를 고려한 더 정확한 검색
+  const searchWords = searchLower.split(/\s+/).filter(word => word.length > 0);
+  
+  // 모든 검색어가 포함되어야 매칭 (AND 조건)
+  const allWordsFound = searchWords.every(word => {
+    const found = contentLower.includes(word);
+    console.log(`🔎 티켓 ${ticketId} 검색어 "${word}": ${found ? '발견' : '없음'}`);
+    return found;
+  });
+  
+  console.log(`${allWordsFound ? '✅' : '❌'} 티켓 ${ticketId} 텍스트 검색 ${allWordsFound ? '성공' : '실패'} (${searchWords.length}개 단어 중 ${searchWords.filter(word => contentLower.includes(word)).length}개 매칭)`);
+  
+  return allWordsFound;
 };
 
 // 상태 필터링
