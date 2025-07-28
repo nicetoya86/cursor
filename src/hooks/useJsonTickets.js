@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { filterTickets, sortTickets, getTicketStats, getSearchSuggestions } from '../utils/ticketFilter';
 
-export const useJsonTickets = () => {
+export const useJsonTickets = (analyzedTickets = []) => {
   const [allTickets, setAllTickets] = useState([]);
   const [filteredTickets, setFilteredTickets] = useState([]);
   const [currentFilters, setCurrentFilters] = useState(null);
@@ -12,6 +12,16 @@ export const useJsonTickets = () => {
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 현재 활성 데이터 결정 (분석된 티켓이 있으면 우선, 없으면 전체 티켓)
+  const activeTickets = analyzedTickets.length > 0 ? analyzedTickets : allTickets;
+
+  console.log('🎯 useJsonTickets 활성 데이터:', {
+    allTicketsCount: allTickets.length,
+    analyzedTicketsCount: analyzedTickets.length,
+    activeTicketsCount: activeTickets.length,
+    usingAnalyzed: analyzedTickets.length > 0
+  });
 
   // 데이터 로드
   const loadTickets = useCallback((tickets, filename) => {
@@ -50,15 +60,15 @@ export const useJsonTickets = () => {
       console.log('🎯 applyFilters 호출됨:', filters);
       setCurrentFilters(filters);
       
-      if (!allTickets.length) {
+      if (!activeTickets.length) {
         console.log('❌ 티켓 데이터 없음');
         setFilteredTickets([]);
         return;
       }
 
       // 필터링 적용
-      const filtered = filterTickets(allTickets, filters);
-      console.log(`✅ 필터링 결과: ${filtered.length}/${allTickets.length}개 티켓`);
+      const filtered = filterTickets(activeTickets, filters);
+      console.log(`✅ 필터링 결과: ${filtered.length}/${activeTickets.length}개 티켓`);
       
       // 정렬 적용
       const sorted = sortTickets(filtered, sortConfig.sortBy, sortConfig.sortOrder);
@@ -69,7 +79,7 @@ export const useJsonTickets = () => {
       console.error('필터링 오류:', err);
       setError(`필터링 중 오류가 발생했습니다: ${err.message}`);
     }
-  }, [allTickets, sortConfig]);
+  }, [activeTickets, sortConfig]);
 
   // 정렬 변경
   const changeSorting = useCallback((sortBy, sortOrder = 'desc') => {
@@ -98,15 +108,15 @@ export const useJsonTickets = () => {
   // 통계 정보 (메모화)
   const stats = useMemo(() => {
     return {
-      all: getTicketStats(allTickets),
+      all: getTicketStats(activeTickets),
       filtered: getTicketStats(filteredTickets)
     };
-  }, [allTickets, filteredTickets]);
+  }, [activeTickets, filteredTickets]);
 
   // 검색 제안 (메모화)
   const suggestions = useMemo(() => {
-    return getSearchSuggestions(allTickets);
-  }, [allTickets]);
+    return getSearchSuggestions(activeTickets);
+  }, [activeTickets]);
 
   // 내보내기용 데이터 준비
   const getExportData = useCallback(() => {
@@ -150,8 +160,8 @@ export const useJsonTickets = () => {
     getExportData,
     
     // 계산된 값
-    hasData: allTickets.length > 0,
-    totalCount: allTickets.length,
+    hasData: activeTickets.length > 0,
+    totalCount: activeTickets.length,
     filteredCount: filteredTickets.length,
     isFiltered: currentFilters && (
       currentFilters.startDate || 

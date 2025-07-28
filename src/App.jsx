@@ -8,31 +8,32 @@ import { useJsonTickets } from './hooks/useJsonTickets';
 import './App.css';
 
 function App() {
-  // 임시 테스트: 간단한 화면 먼저 표시
+  // 임시 테스트 화면 상태
   const [showFullApp, setShowFullApp] = useState(false);
   
+  // GPT 분석 관련 상태 (useJsonTickets 이전에 정의)
+  const [analyzedTickets, setAnalyzedTickets] = useState([]);
+  const [showAnalyzedResults, setShowAnalyzedResults] = useState(false);
+  const [analysisSummary, setAnalysisSummary] = useState(null);
+  const [showFilterAndResults, setShowFilterAndResults] = useState(false);
+  
+  // JSON 티켓 관리 훅 사용 (분석된 티켓 전달)
   const {
     allTickets,
     filteredTickets,
     fileName,
     suggestions,
     isLoading,
-    error,
+    error: jsonError,
     hasData,
     totalCount,
     filteredCount,
     isFiltered,
     loadTickets,
     applyFilters,
-    clearData,
-    clearError
-  } = useJsonTickets();
-
-  // GPT 분석 관련 상태
-  const [analyzedTickets, setAnalyzedTickets] = useState([]);
-  const [showAnalyzedResults, setShowAnalyzedResults] = useState(false);
-  const [analysisSummary, setAnalysisSummary] = useState(null);
-  const [showFilterAndResults, setShowFilterAndResults] = useState(false);
+    clearError,
+    clearData
+  } = useJsonTickets(analyzedTickets);
 
   // JSON 데이터 로드 핸들러
   const handleDataLoaded = useCallback((tickets, filename) => {
@@ -140,10 +141,10 @@ function App() {
         </header>
 
         {/* 에러 표시 */}
-        {error && (
+        {jsonError && (
           <div className="error">
             <strong>오류가 발생했습니다:</strong><br />
-            {error}
+            {jsonError}
             <button 
               onClick={clearError}
               style={{ 
@@ -266,10 +267,10 @@ function App() {
         {/* 티켓 목록 - 분석하기 버튼 클릭 후에만 표시 */}
         {showFilterAndResults && hasData && (
           <TicketList 
-            tickets={showAnalyzedResults && analyzedTickets.length > 0 ? analyzedTickets : filteredTickets}
+            tickets={filteredTickets}
             loading={isLoading}
             error={null}
-            isAnalyzed={showAnalyzedResults && analyzedTickets.length > 0}
+            isAnalyzed={analyzedTickets.length > 0}
           />
         )}
       </div>
