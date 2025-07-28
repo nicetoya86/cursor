@@ -9,13 +9,25 @@ const GptAnalyzer = ({ tickets, onAnalysisStart, onAnalysisComplete }) => {
 
   const handleAnalyze = async () => {
     if (!tickets || tickets.length === 0) {
-      setError('분석할 티켓이 없습니다.');
+      alert('JSON 파일을 첨부해주세요.');
+      setError('분석할 티켓이 없습니다. JSON 파일을 먼저 업로드해주세요.');
       return;
     }
 
+    console.log('🚀 분석 시작:', {
+      ticketCount: tickets.length,
+      analysisMode,
+      onAnalysisStart: !!onAnalysisStart
+    });
+
     // 분석 시작 시 부모 컴포넌트에 알림 (필터 영역 표시)
     if (onAnalysisStart) {
-      onAnalysisStart();
+      try {
+        onAnalysisStart();
+        console.log('✅ onAnalysisStart 호출 완료');
+      } catch (error) {
+        console.error('❌ onAnalysisStart 호출 오류:', error);
+      }
     }
 
     setIsAnalyzing(true);
@@ -46,14 +58,40 @@ const GptAnalyzer = ({ tickets, onAnalysisStart, onAnalysisComplete }) => {
       }
 
       console.log('✅ 분석 완료:', result.summary);
-      onAnalysisComplete(result.analyzedTickets, result.summary);
+      
+      if (onAnalysisComplete) {
+        try {
+          onAnalysisComplete(result.analyzedTickets, result.summary);
+          console.log('✅ onAnalysisComplete 호출 완료');
+        } catch (error) {
+          console.error('❌ onAnalysisComplete 호출 오류:', error);
+          throw new Error(`분석 완료 처리 중 오류: ${error.message}`);
+        }
+      }
       
     } catch (error) {
-      console.error('분석 오류:', error);
-      setError(error.message);
+      console.error('❌ 분석 오류 상세:', {
+        message: error.message,
+        stack: error.stack,
+        analysisMode,
+        ticketCount: tickets?.length || 0
+      });
+      
+      let userMessage = '분석 중 오류가 발생했습니다.';
+      if (error.message.includes('API 키')) {
+        userMessage = 'OpenAI API 키가 설정되지 않았습니다. 모의 분석 모드를 선택해주세요.';
+      } else if (error.message.includes('네트워크')) {
+        userMessage = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+      } else {
+        userMessage = `분석 오류: ${error.message}`;
+      }
+      
+      setError(userMessage);
+      alert(userMessage);
     } finally {
       setIsAnalyzing(false);
       setProgress(0);
+      console.log('🔄 분석 프로세스 종료');
     }
   };
 

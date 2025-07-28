@@ -46,9 +46,19 @@ function App() {
 
   // 분석 시작 핸들러 (분석하기 버튼 클릭 시 호출)
   const handleAnalysisStart = useCallback(() => {
-    console.log('🚀 분석 시작 - 필터 및 검색 영역 표시');
-    setShowFilterAndResults(true);
-  }, []);
+    try {
+      console.log('🚀 App.jsx - 분석 시작 핸들러 호출:', {
+        hasData,
+        allTicketsCount: allTickets?.length || 0,
+        showFilterAndResults
+      });
+      
+      setShowFilterAndResults(true);
+      console.log('✅ showFilterAndResults = true 설정 완료');
+    } catch (error) {
+      console.error('❌ handleAnalysisStart 오류:', error);
+    }
+  }, [hasData, allTickets, showFilterAndResults]);
 
   // GPT 분석 완료 핸들러
   const handleAnalysisComplete = useCallback((analyzed, summary) => {
@@ -224,23 +234,48 @@ function App() {
         )}
 
         {/* 필터링 폼 - 분석하기 버튼 클릭 후에만 표시 */}
-        {showFilterAndResults && hasData && (
-          <FilterForm 
-            tickets={allTickets}
-            onFilter={handleFilter}
-            suggestions={suggestions}
-          />
-        )}
+        {(() => {
+          const shouldShowFilter = showFilterAndResults && hasData;
+          console.log('🔍 FilterForm 렌더링 조건:', {
+            showFilterAndResults,
+            hasData,
+            shouldShowFilter,
+            allTicketsCount: allTickets?.length || 0
+          });
+          
+          return shouldShowFilter && (
+            <FilterForm 
+              tickets={allTickets}
+              onFilter={handleFilter}
+              suggestions={suggestions}
+            />
+          );
+        })()}
 
         {/* 티켓 목록 - 분석하기 버튼 클릭 후에만 표시 */}
-        {showFilterAndResults && hasData && (
-          <TicketList 
-            tickets={showAnalyzedResults && analyzedTickets.length > 0 ? analyzedTickets : filteredTickets}
-            loading={isLoading}
-            error={null}
-            isAnalyzed={showAnalyzedResults && analyzedTickets.length > 0}
-          />
-        )}
+        {(() => {
+          const shouldShowTicketList = showFilterAndResults && hasData;
+          const ticketsToShow = showAnalyzedResults && analyzedTickets.length > 0 ? analyzedTickets : filteredTickets;
+          
+          console.log('📋 TicketList 렌더링 조건:', {
+            showFilterAndResults,
+            hasData,
+            shouldShowTicketList,
+            showAnalyzedResults,
+            analyzedTicketsCount: analyzedTickets?.length || 0,
+            filteredTicketsCount: filteredTickets?.length || 0,
+            ticketsToShowCount: ticketsToShow?.length || 0
+          });
+          
+          return shouldShowTicketList && (
+            <TicketList 
+              tickets={ticketsToShow}
+              loading={isLoading}
+              error={null}
+              isAnalyzed={showAnalyzedResults && analyzedTickets.length > 0}
+            />
+          );
+        })()}
       </div>
     </div>
   );
