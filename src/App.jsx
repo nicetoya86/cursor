@@ -237,7 +237,16 @@ function App() {
                     fontSize: '14px',
                     color: '#495057'
                   }}>
-                    <strong>📈 분석 요약:</strong> {analysisSummary}
+                    <strong>📈 분석 요약:</strong> 
+                    {typeof analysisSummary === 'object' && analysisSummary !== null ? (
+                      <div style={{ marginTop: '8px' }}>
+                        전체 {analysisSummary.total || 0}개 중 {analysisSummary.analyzed || 0}개 분석 완료
+                        {(analysisSummary.excluded || 0) > 0 && ` (${analysisSummary.excluded}개 제외)`}
+                        {analysisSummary.isMock && ' (모의 분석 모드)'}
+                      </div>
+                    ) : (
+                      ` ${analysisSummary || '분석 정보 없음'}`
+                    )}
                   </div>
                 )}
               </div>

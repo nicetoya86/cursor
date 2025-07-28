@@ -7,7 +7,6 @@ const FilterForm = ({ tickets, onFilter, suggestions }) => {
   // Props 검증 및 기본값 설정
   const safeTickets = tickets || [];
   const safeSuggestions = suggestions || { tags: [], statuses: [], priorities: [] };
-  const safeOnFilter = onFilter || (() => {});
 
   console.log('🔧 FilterForm 렌더링:', {
     ticketsCount: safeTickets.length,
