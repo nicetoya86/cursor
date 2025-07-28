@@ -1,21 +1,49 @@
 import { isWithinInterval, parseISO, isValid } from 'date-fns';
 
-// 날짜 파싱 및 검증
+// 날짜 파싱 및 검증 (개선된 버전)
 const parseDate = (dateString) => {
   if (!dateString) return null;
   
   try {
+    // 다양한 날짜 형식 처리
+    let dateToProcess = dateString;
+    
+    // 문자열이 아닌 경우 문자열로 변환
+    if (typeof dateToProcess !== 'string') {
+      dateToProcess = dateToProcess.toString();
+    }
+    
+    console.log('📅 날짜 파싱 시도:', dateToProcess);
+    
     // ISO 8601 형식 시도
-    const isoDate = parseISO(dateString);
-    if (isValid(isoDate)) return isoDate;
+    const isoDate = parseISO(dateToProcess);
+    if (isValid(isoDate)) {
+      console.log('✅ ISO 날짜 파싱 성공:', isoDate.toISOString());
+      return isoDate;
+    }
     
     // 일반적인 Date 생성자 시도
-    const normalDate = new Date(dateString);
-    if (isValid(normalDate)) return normalDate;
+    const normalDate = new Date(dateToProcess);
+    if (isValid(normalDate) && !isNaN(normalDate.getTime())) {
+      console.log('✅ 일반 날짜 파싱 성공:', normalDate.toISOString());
+      return normalDate;
+    }
     
+    // YYYY-MM-DD 형식 처리
+    const dateMatch = dateToProcess.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (dateMatch) {
+      const [, year, month, day] = dateMatch;
+      const manualDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (isValid(manualDate)) {
+        console.log('✅ 수동 날짜 파싱 성공:', manualDate.toISOString());
+        return manualDate;
+      }
+    }
+    
+    console.log('❌ 모든 날짜 파싱 방법 실패');
     return null;
   } catch (error) {
-    console.warn('날짜 파싱 실패:', dateString, error);
+    console.warn('❌ 날짜 파싱 예외 발생:', dateString, error);
     return null;
   }
 };
@@ -127,19 +155,28 @@ const matchesDateRange = (ticketDate, startDate, endDate) => {
   return true;
 };
 
-// 텍스트 검색 (문의 내용에서만 검색, GPT 분석 결과 포함)
+// 텍스트 검색 (문의 내용에서만 검색, GPT 분석 결과 포함) - 개선된 버전
 const matchesText = (ticket, searchText) => {
   if (!searchText || searchText.trim() === '') return true;
   
-  const searchLower = searchText.toLowerCase();
+  const searchLower = searchText.toLowerCase().trim();
+  const ticketId = ticket.id || 'unknown';
+  
+  console.log(`🔍 티켓 ${ticketId} 텍스트 검색 시작: "${searchText}"`);
   
   // 1순위: GPT 분석 결과가 있으면 해당 내용에서 검색
   if (ticket.gptAnalysis && ticket.gptAnalysis.extractedInquiry) {
     const gptContent = ticket.gptAnalysis.extractedInquiry.toLowerCase();
+    console.log(`🤖 티켓 ${ticketId} GPT 분석 결과 확인 (${gptContent.length}자)`);
+    
     if (gptContent.includes(searchLower)) {
-      console.log(`티켓 ${ticket.id}: GPT 분석 결과에서 텍스트 매칭`);
+      console.log(`✅ 티켓 ${ticketId}: GPT 분석 결과에서 텍스트 매칭 성공`);
       return true;
+    } else {
+      console.log(`❌ 티켓 ${ticketId}: GPT 분석 결과에서 텍스트 매칭 실패`);
     }
+  } else {
+    console.log(`ℹ️ 티켓 ${ticketId}: GPT 분석 결과 없음`);
   }
   
   // 2순위: 기존 방식으로 댓글에서 검색
@@ -190,14 +227,17 @@ const matchesText = (ticket, searchText) => {
       comments += ticket.subject + ' ';
     }
     
-    comments = comments.toLowerCase();
+    comments = comments.toLowerCase().trim();
+    console.log(`📝 티켓 ${ticketId} 추출된 댓글 내용 (${comments.length}자): ${comments.substring(0, 100)}...`);
   } catch (error) {
-    console.warn('댓글 추출 실패:', error);
+    console.warn(`❌ 티켓 ${ticketId} 댓글 추출 실패:`, error);
     comments = '';
   }
   
   // 댓글 내용에서 검색
-  return comments.includes(searchLower);
+  const result = comments.includes(searchLower);
+  console.log(`${result ? '✅' : '❌'} 티켓 ${ticketId} 텍스트 검색 ${result ? '성공' : '실패'}`);
+  return result;
 };
 
 // 상태 필터링
@@ -230,10 +270,10 @@ const isCallRelatedTitle = (subject) => {
   return callKeywords.some(keyword => subjectLower.includes(keyword.toLowerCase()));
 };
 
-// 메인 필터링 함수
+// 메인 필터링 함수 (상세 디버깅 추가)
 export const filterTickets = (tickets, filters) => {
   if (!tickets || !Array.isArray(tickets)) {
-    console.warn('유효하지 않은 티켓 데이터:', tickets);
+    console.warn('❌ 유효하지 않은 티켓 데이터:', tickets);
     return [];
   }
 
@@ -246,15 +286,41 @@ export const filterTickets = (tickets, filters) => {
     priority
   } = filters || {};
 
-  console.log('🔍 필터링 실행:', {
+  console.log('🔍 ===== 필터링 실행 시작 =====');
+  console.log('📊 입력 데이터:', {
     totalTickets: tickets.length,
-    startDate,
-    endDate,
-    tags: tags?.length || 0,
-    searchText: searchText?.trim() || '',
-    status: status?.length || 0,
-    priority: priority?.length || 0
+    filters: filters
   });
+  console.log('📋 각 필터 상세:', {
+    startDate: startDate ? new Date(startDate).toISOString() : null,
+    endDate: endDate ? new Date(endDate).toISOString() : null,
+    tags: tags,
+    tagsLength: tags?.length || 0,
+    searchText: searchText?.trim() || '',
+    searchTextLength: searchText?.trim()?.length || 0,
+    status: status,
+    statusLength: status?.length || 0,
+    priority: priority,
+    priorityLength: priority?.length || 0
+  });
+
+  // 필터가 하나도 없으면 모든 티켓 반환 (전화 관련 제외)
+  const hasAnyFilter = startDate || endDate || (tags && tags.length > 0) || 
+                      (searchText && searchText.trim()) || 
+                      (status && status.length > 0) || 
+                      (priority && priority.length > 0);
+  
+  console.log('🎯 필터 적용 여부:', hasAnyFilter);
+  
+  if (!hasAnyFilter) {
+    // 필터가 없어도 전화 관련 제목은 제외
+    const results = tickets.filter(ticket => {
+      if (!ticket) return false;
+      return !isCallRelatedTitle(ticket.subject);
+    });
+    console.log(`✅ 필터 없음 - 전화 관련 제외 후: ${results.length}/${tickets.length}개 티켓 반환`);
+    return results;
+  }
 
   const results = tickets.filter(ticket => {
     if (!ticket) return false;
