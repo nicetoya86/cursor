@@ -22,7 +22,7 @@ const CsvDownloadButton = ({ tickets, disabled = false }) => {
         '제목': ticket.subject || '',
         '내용': cleanText(ticket.description || ''),
         '상태': ticket.status || '',
-        '우선순위': ticket.priority || '',
+        '우선순위': ticket.priority || '',``
         '태그': Array.isArray(ticket.tags) ? ticket.tags.join(', ') : '',
         '요청자 ID': ticket.requester_id || '',
         '담당자 ID': ticket.assignee_id || '',
