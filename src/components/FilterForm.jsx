@@ -4,6 +4,17 @@ import CreatableSelect from 'react-select/creatable';
 import 'react-datepicker/dist/react-datepicker.css';
 
 const FilterForm = ({ tickets, onFilter, suggestions }) => {
+  // Props 검증 및 기본값 설정
+  const safeTickets = tickets || [];
+  const safeSuggestions = suggestions || { tags: [], statuses: [], priorities: [] };
+  const safeOnFilter = onFilter || (() => {});
+
+  console.log('🔧 FilterForm 렌더링:', {
+    ticketsCount: safeTickets.length,
+    suggestionsKeys: Object.keys(safeSuggestions),
+    hasOnFilter: !!onFilter
+  });
+
   const [filters, setFilters] = useState({
     startDate: null,
     endDate: null,
@@ -13,8 +24,13 @@ const FilterForm = ({ tickets, onFilter, suggestions }) => {
 
   // 필터 변경 시 자동으로 필터링 적용
   useEffect(() => {
-    console.log('🔧 FilterForm - 필터 변경됨:', filters);
-    onFilter(filters);
+    try {
+      console.log('🔧 FilterForm - 필터 변경됨:', filters);
+      const safeOnFilterCallback = onFilter || (() => {});
+      safeOnFilterCallback(filters);
+    } catch (error) {
+      console.error('❌ FilterForm onFilter 오류:', error);
+    }
   }, [filters, onFilter]);
 
   const handleFilterChange = (key, value) => {
@@ -151,7 +167,7 @@ const FilterForm = ({ tickets, onFilter, suggestions }) => {
             isMulti
             value={filters.tags}
             onChange={(value) => handleFilterChange('tags', value || [])}
-            options={suggestions.tags || []}
+            options={safeSuggestions.tags || []}
             onCreateOption={handleTagCreate}
             placeholder="태그 선택 또는 입력..."
             noOptionsMessage={() => "새 태그를 입력하려면 Enter를 누르세요"}

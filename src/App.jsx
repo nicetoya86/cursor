@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import JsonUploader from './components/JsonUploader';
 import FilterForm from './components/FilterForm';
 import TicketList from './components/TicketList';
@@ -93,6 +93,18 @@ function App() {
   const handleFilter = useCallback((filters) => {
     applyFilters(filters);
   }, [applyFilters]);
+
+  // 디버그용 useEffect - 상태 변화 모니터링
+  useEffect(() => {
+    console.log('🔍 App 상태 변화:', {
+      showFilterAndResults,
+      hasData,
+      allTicketsCount: allTickets?.length || 0,
+      filteredTicketsCount: filteredTickets?.length || 0,
+      analyzedTicketsCount: analyzedTickets?.length || 0,
+      showAnalyzedResults
+    });
+  }, [showFilterAndResults, hasData, allTickets, filteredTickets, analyzedTickets, showAnalyzedResults]);
 
   // 임시 테스트 화면
   if (!showFullApp) {
@@ -234,48 +246,23 @@ function App() {
         )}
 
         {/* 필터링 폼 - 분석하기 버튼 클릭 후에만 표시 */}
-        {(() => {
-          const shouldShowFilter = showFilterAndResults && hasData;
-          console.log('🔍 FilterForm 렌더링 조건:', {
-            showFilterAndResults,
-            hasData,
-            shouldShowFilter,
-            allTicketsCount: allTickets?.length || 0
-          });
-          
-          return shouldShowFilter && (
-            <FilterForm 
-              tickets={allTickets}
-              onFilter={handleFilter}
-              suggestions={suggestions}
-            />
-          );
-        })()}
+        {showFilterAndResults && hasData && (
+          <FilterForm 
+            tickets={allTickets}
+            onFilter={handleFilter}
+            suggestions={suggestions}
+          />
+        )}
 
         {/* 티켓 목록 - 분석하기 버튼 클릭 후에만 표시 */}
-        {(() => {
-          const shouldShowTicketList = showFilterAndResults && hasData;
-          const ticketsToShow = showAnalyzedResults && analyzedTickets.length > 0 ? analyzedTickets : filteredTickets;
-          
-          console.log('📋 TicketList 렌더링 조건:', {
-            showFilterAndResults,
-            hasData,
-            shouldShowTicketList,
-            showAnalyzedResults,
-            analyzedTicketsCount: analyzedTickets?.length || 0,
-            filteredTicketsCount: filteredTickets?.length || 0,
-            ticketsToShowCount: ticketsToShow?.length || 0
-          });
-          
-          return shouldShowTicketList && (
-            <TicketList 
-              tickets={ticketsToShow}
-              loading={isLoading}
-              error={null}
-              isAnalyzed={showAnalyzedResults && analyzedTickets.length > 0}
-            />
-          );
-        })()}
+        {showFilterAndResults && hasData && (
+          <TicketList 
+            tickets={showAnalyzedResults && analyzedTickets.length > 0 ? analyzedTickets : filteredTickets}
+            loading={isLoading}
+            error={null}
+            isAnalyzed={showAnalyzedResults && analyzedTickets.length > 0}
+          />
+        )}
       </div>
     </div>
   );

@@ -2,13 +2,27 @@ import React from 'react';
 import { format } from 'date-fns';
 
 const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
+  // Props 검증 및 기본값 설정
+  const safeTickets = tickets || [];
+  const safeLoading = loading || false;
+  const safeError = error || null;
+
+  console.log('📋 TicketList 렌더링:', {
+    ticketsCount: safeTickets.length,
+    loading: safeLoading,
+    error: safeError,
+    isAnalyzed
+  });
+
   // 날짜 포맷팅
   const formatDate = (dateString) => {
     try {
+      if (!dateString) return '-';
       const date = new Date(dateString);
       return format(date, 'yyyy-MM-dd HH:mm');
     } catch (error) {
-      return dateString;
+      console.warn('날짜 포맷팅 오류:', error);
+      return dateString || '-';
     }
   };
 
@@ -556,7 +570,7 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
 
   // 상태별 색상 및 우선순위별 색상 함수는 현재 사용되지 않으므로 제거됨
 
-  if (loading) {
+  if (safeLoading) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="text-center py-8">
@@ -567,20 +581,20 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
     );
   }
 
-  if (error) {
+  if (safeError) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-red-200 p-6">
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <div className="text-red-800">
             <strong>오류가 발생했습니다:</strong><br />
-            {error}
+            {safeError}
           </div>
         </div>
       </div>
     );
   }
 
-  if (!tickets || tickets.length === 0) {
+  if (!safeTickets || safeTickets.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="text-center py-12">
@@ -595,7 +609,7 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
   return (
     <div className="search-results-container">
       <div className="results-header">
-        <h3 className="results-title">검색 결과 ({tickets.length}개)</h3>
+        <h3 className="results-title">검색 결과 ({safeTickets.length}개)</h3>
       </div>
 
       {/* 개선된 테이블 뷰 */}
@@ -611,7 +625,7 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
             </tr>
           </thead>
           <tbody>
-            {tickets.map((ticket, index) => (
+            {safeTickets.map((ticket, index) => (
               <tr key={ticket.id} className="table-row">
                 <td className="cell-ticket-id">
                   <span className="ticket-badge">
@@ -676,7 +690,7 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
 
       {/* 모바일 반응형 카드 뷰 */}
       <div className="lg:hidden space-y-4">
-        {tickets.map((ticket, index) => (
+        {safeTickets.map((ticket, index) => (
           <div key={ticket.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
             {/* 헤더 */}
             <div className="flex justify-between items-start mb-4">
