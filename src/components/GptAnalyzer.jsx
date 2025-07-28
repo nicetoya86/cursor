@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { analyzeTicketsWithGPT, mockAnalyzeTickets, validateApiKey } from '../api/gptService';
 
-const GptAnalyzer = ({ tickets, onAnalysisComplete }) => {
+const GptAnalyzer = ({ tickets, onAnalysisStart, onAnalysisComplete }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
@@ -11,6 +11,11 @@ const GptAnalyzer = ({ tickets, onAnalysisComplete }) => {
     if (!tickets || tickets.length === 0) {
       setError('분석할 티켓이 없습니다.');
       return;
+    }
+
+    // 분석 시작 시 부모 컴포넌트에 알림 (필터 영역 표시)
+    if (onAnalysisStart) {
+      onAnalysisStart();
     }
 
     setIsAnalyzing(true);

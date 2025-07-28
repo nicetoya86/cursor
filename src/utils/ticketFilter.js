@@ -79,15 +79,13 @@ const matchesDateRange = (ticketDate, startDate, endDate) => {
   return true;
 };
 
-// 텍스트 검색 (제목, 내용)
+// 텍스트 검색 (문의 내용에서만 검색)
 const matchesText = (ticket, searchText) => {
   if (!searchText || searchText.trim() === '') return true;
   
   const searchLower = searchText.toLowerCase();
-  const subject = (ticket.subject || '').toLowerCase();
-  const description = (ticket.description || '').toLowerCase();
   
-  // getUserComments 함수 결과도 검색 대상에 포함
+  // 오직 getUserComments 결과에서만 검색 (제목, 설명 제외)
   let comments = '';
   try {
     // getUserComments 로직을 간단하게 구현
@@ -118,7 +116,6 @@ const matchesText = (ticket, searchText) => {
     
     findComments(ticket);
     
-    // 모든 댓글 내용을 하나의 문자열로 합치기
     allComments.forEach(comment => {
       if (comment.body) {
         comments += comment.body + ' ';
@@ -130,12 +127,12 @@ const matchesText = (ticket, searchText) => {
     
     comments = comments.toLowerCase();
   } catch (error) {
-    console.warn('댓글 검색 중 오류:', error);
+    console.warn('댓글 추출 실패:', error);
+    comments = '';
   }
   
-  return subject.includes(searchLower) || 
-         description.includes(searchLower) || 
-         comments.includes(searchLower);
+  // 오직 문의 내용(comments)에서만 검색
+  return comments.includes(searchLower);
 };
 
 // 상태 필터링

@@ -32,6 +32,7 @@ function App() {
   const [analyzedTickets, setAnalyzedTickets] = useState([]);
   const [showAnalyzedResults, setShowAnalyzedResults] = useState(false);
   const [analysisSummary, setAnalysisSummary] = useState(null);
+  const [showFilterAndResults, setShowFilterAndResults] = useState(false);
 
   // JSON 데이터 로드 핸들러
   const handleDataLoaded = useCallback((tickets, filename) => {
@@ -40,7 +41,14 @@ function App() {
     setAnalyzedTickets([]);
     setShowAnalyzedResults(false);
     setAnalysisSummary(null);
+    setShowFilterAndResults(false); // 새 데이터 로드 시 필터 영역 숨기기
   }, [loadTickets]);
+
+  // 분석 시작 핸들러 (분석하기 버튼 클릭 시 호출)
+  const handleAnalysisStart = useCallback(() => {
+    console.log('🚀 분석 시작 - 필터 및 검색 영역 표시');
+    setShowFilterAndResults(true);
+  }, []);
 
   // GPT 분석 완료 핸들러
   const handleAnalysisComplete = useCallback((analyzed, summary) => {
@@ -181,6 +189,7 @@ function App() {
             {/* GPT 분석 섹션 */}
             <GptAnalyzer 
               tickets={allTickets}
+              onAnalysisStart={handleAnalysisStart}
               onAnalysisComplete={handleAnalysisComplete}
             />
 
@@ -214,8 +223,8 @@ function App() {
           </>
         )}
 
-        {/* 필터링 폼 - 데이터가 있으면 항상 표시 (분석 모드와 무관) */}
-        {hasData && (
+        {/* 필터링 폼 - 분석하기 버튼 클릭 후에만 표시 */}
+        {showFilterAndResults && hasData && (
           <FilterForm 
             tickets={allTickets}
             onFilter={handleFilter}
@@ -223,8 +232,8 @@ function App() {
           />
         )}
 
-        {/* 티켓 목록 - 데이터가 있으면 항상 표시 (분석 모드와 무관) */}
-        {hasData && (
+        {/* 티켓 목록 - 분석하기 버튼 클릭 후에만 표시 */}
+        {showFilterAndResults && hasData && (
           <TicketList 
             tickets={showAnalyzedResults && analyzedTickets.length > 0 ? analyzedTickets : filteredTickets}
             loading={isLoading}
