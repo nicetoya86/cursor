@@ -477,7 +477,7 @@ code {
   border: 1px solid #e9ecef;
   border-radius: 8px;
   padding: 12px;
-  max-height: 100px;
+  max-height: 300px; /* 100px에서 300px로 증가 */
   overflow-y: auto;
   font-size: 13px;
   line-height: 1.5;

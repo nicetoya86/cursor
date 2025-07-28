@@ -26,11 +26,10 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
     }
   };
 
-  // 텍스트 길이 제한
-  const truncateText = (text, maxLength = 100) => {
+  // 텍스트 전체 표시 (길이 제한 없음)
+  const displayFullText = (text) => {
     if (!text) return '내용 없음';
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
+    return text; // 전체 텍스트 반환
   };
 
   // 고객 태그만 필터링하는 함수
@@ -637,7 +636,7 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
                 </td>
                 <td className="cell-title">
                   <div className="title-content" title={ticket.subject}>
-                    {truncateText(ticket.subject, 80)}
+                    {displayFullText(ticket.subject)}
                   </div>
                 </td>
                 <td className="cell-tags">
@@ -678,7 +677,7 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
                 <td className="cell-content">
                   <div className="content-box">
                     <div className="content-text">
-                      {truncateText(getUserComments(ticket), 200)}
+                      {displayFullText(getUserComments(ticket))}
                     </div>
                   </div>
                 </td>
@@ -763,9 +762,9 @@ const TicketList = ({ tickets, loading, error, isAnalyzed = false }) => {
                 <span className="text-gray-400 mt-0.5">💬</span>
                 <div className="flex-1">
                   <div className="text-xs font-medium text-gray-600 mb-2">문의 내용</div>
-                  <div className="text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-3 max-h-40 overflow-y-auto shadow-sm">
+                  <div className="text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-3 max-h-80 overflow-y-auto shadow-sm">
                     <div className="whitespace-pre-wrap break-words leading-relaxed">
-                      {getUserComments(ticket)}
+                      {displayFullText(getUserComments(ticket))}
                     </div>
                   </div>
                 </div>
