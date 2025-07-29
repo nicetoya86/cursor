@@ -53,19 +53,21 @@ ${tagContext}
 - 1~3글자의 무의미한 텍스트
 - **고객의 실명이나 개인정보 (이름, 닉네임 등은 제거하고 내용만 추출)**
 
-**포함해야 할 내용들 (극도로 엄격한 고객 내용만):**
-- **오직 고객이 직접 작성한 구체적인 문의, 질문, 요청만 포함**
-- **최소 5글자 이상의 의미있는 문장만 포함**
-- **태그와 직접 관련된 고객의 명확하고 구체적인 문의나 문제만**
-- **고객의 실제 상황 설명이나 구체적인 배경 정보만**
-- **고객의 명확한 감정 표현이나 구체적인 만족도 표시만 (태그와 직접 관련된 경우)**
-- **단순 인사나 감사 인사는 뒤에 구체적인 문의가 이어질 때만 포함**
+**포함해야 할 내용들 (넓은 범위의 고객 내용):**
+- **고객이 직접 작성한 문의, 질문, 요청, 불만, 칭찬 포함**
+- **최소 3글자 이상의 의미있는 문장 포함 (기준 완화)**
+- **태그와 직접 또는 간접적으로 관련된 고객의 모든 문의나 문제**
+- **고객의 상황 설명, 배경 정보, 경험담 포함**
+- **고객의 감정 표현, 만족도, 의견 표시 (태그와 관련 여부 관계없이)**
+- **인사말도 뒤에 문의가 이어지지 않더라도 고객이 작성했다면 포함**
+- **고객의 단순한 응답이라도 문맥상 의미가 있으면 포함**
 
-**중요한 구분 기준 (더욱 엄격):**
-- **반드시 포함**: "결제가 안되요", "로그인할 수 없습니다", "화면이 이상해요", "환불해주세요", "서비스 불만족스럽습니다" 등 구체적 문의
-- **반드시 제외**: "안녕하세요", "고객님", "확인해드리겠습니다", "문의해주셔서 감사합니다", "도움이 되셨나요", "네", "예", "알겠습니다" 등
-- **의심스러우면 무조건 제외**: 매니저/상담원이 작성했을 가능성이 조금이라도 있으면 제외
-- **길이 기준**: 5글자 미만은 무조건 제외, 단순 응답은 10글자라도 제외
+**중요한 구분 기준 (완화된 기준):**
+- **우선 포함**: "결제가 안되요", "로그인할 수 없습니다", "화면이 이상해요", "환불해주세요", "서비스 불만족스럽습니다" 등 구체적 문의
+- **고객 작성으로 판단되면 포함**: "안녕하세요 문의드립니다", "도움이 필요해요", "궁금한게 있어요", "문제가 생겼어요" 등
+- **반드시 제외**: 명백한 상담원 멘트 "확인해드리겠습니다", "문의해주셔서 감사합니다", "도움이 되셨나요" 등
+- **의심스러울 때**: 고객이 작성했을 가능성이 높으면 포함
+- **길이 기준**: 3글자 이상이면 의미 있는 내용으로 판단
 
 **추출 우선순위 (고객 내용만):**
 1. **1순위**: 태그와 직접 관련된 고객의 명확한 문의
@@ -73,18 +75,18 @@ ${tagContext}
 3. **3순위**: 고객이 작성한 상황 설명이나 배경 정보
 4. **제외**: 매니저, BOT, 시스템이 작성한 모든 내용
 
-**응답 기준 (극도로 엄격한 고객 내용만):**
-- **오직 고객이 직접 작성한 구체적이고 의미있는 내용만 추출**
-- **매니저나 BOT 내용이 조금이라도 의심되면 무조건 제외**
-- **단순 인사, 감사, 확인 등은 뒤에 구체적 문의가 없으면 완전 제외**
-- **5글자 미만 또는 의미없는 내용은 무조건 제외**
-- **"구체적인 문의 내용 없음"은 진짜 고객 작성 내용이 전혀 없을 때만 사용**
-- **의심스럽거나 애매한 내용은 포함하지 말고 제외**
+**응답 기준 (넓은 범위의 고객 내용 추출):**
+- **고객이 직접 작성한 모든 의미있는 내용 추출 (관대한 기준)**
+- **매니저나 BOT 내용이 명백하게 확실할 때만 제외**
+- **단순 인사라도 고객이 작성했다면 포함**
+- **3글자 이상의 모든 의미있는 내용 포함**
+- **"구체적인 문의 내용 없음"은 정말로 고객 작성 내용이 전혀 없을 때만 사용**
+- **애매하거나 의심스러운 내용도 고객 작성 가능성이 있으면 포함**
 
-**응답 형식 (더욱 엄격):**
-- **확실한 고객 작성 내용만 있으면**: "1. [확실한 고객 작성 내용]" 형태로 번호를 매겨 응답
-- **조금이라도 의심스럽거나 매니저/BOT 내용만 있으면**: "구체적인 문의 내용 없음" 응답
-- **애매한 경우는 무조건**: "구체적인 문의 내용 없음" 응답
+**응답 형식 (관대한 기준):**
+- **고객 작성 가능성이 있는 내용이 있으면**: "1. [고객 작성 내용]" 형태로 번호를 매겨 응답
+- **명백한 매니저/BOT 내용만 있거나 아무 내용이 없으면**: "구체적인 문의 내용 없음" 응답
+- **의심스러운 경우**: 고객 작성 가능성을 우선하여 포함
 
 **분석할 티켓:**
 ${ticketContent}
@@ -137,21 +139,22 @@ export const analyzeSingleTicket = async (ticket) => {
           role: "system",
           content: `당신은 Zendesk 티켓 분석 전문가입니다. 티켓 제목에 '수신전화' 또는 '발신전화'가 포함되면 무조건 '문의 내용 없음'으로 응답하세요. 
 
-고객의 태그(${customerTags.map(tag => tag.replace('고객_', '')).join(', ')})와 관련된 내용을 추출하되, **극도로 엄격하게 오직 고객이 직접 작성한 내용만** 추출하세요.
+고객의 태그(${customerTags.map(tag => tag.replace('고객_', '')).join(', ')})와 관련된 내용을 추출하되, **넓은 범위에서 관대하게 고객이 직접 작성한 내용을 모두** 추출하세요.
 
-**절대 제외 - 조금이라도 의심되면 무조건 제외:**
-- 여신BOT, 매니저L, 매니저B, 매니저D, Matrix_bot, Caller, 상담원, 직원, 관리자, 운영자가 작성한 모든 내용
-- "안녕하세요", "고객님", "문의해주셔서", "감사합니다", "확인해드리겠습니다", "도움이 되셨나요", "처리해드리겠습니다" 등 상담원 표현
-- "해결되었어요", "해결되지 않았어요", "더 궁금해요", "확인", "취소", "네", "예", "알겠습니다" 등 시스템/단순 응답
-- "빠른 시일 내", "답변드리겠습니다", "확인 후 연락", "운영시간", "평일", "주말" 등 업무 관련 표현
-- 5글자 미만의 짧은 텍스트나 의미없는 내용
+**반드시 제외 - 명백한 상담원/시스템 내용만:**
+- 여신BOT, 매니저L, 매니저B, 매니저D, Matrix_bot, Caller, 상담원, 직원, 관리자, 운영자가 명백하게 작성한 내용
+- "확인해드리겠습니다", "문의해주셔서 감사합니다", "도움이 되셨나요", "처리해드리겠습니다" 등 명백한 상담원 표현
+- "해결되었어요", "해결되지 않았어요", "더 궁금해요" 등 시스템 버튼 응답
+- "빠른 시일 내", "답변드리겠습니다", "확인 후 연락", "운영시간" 등 명백한 업무 표현
 
-**추출 대상 (확실한 고객 내용만):**
-- 고객이 직접 작성한 구체적인 문의, 질문, 요청, 불만, 칭찬만 추출
-- 최소 5글자 이상의 의미있는 문장만 포함
+**적극 추출 대상 (관대한 기준):**
+- 고객이 직접 작성한 모든 문의, 질문, 요청, 불만, 칭찬
+- 최소 3글자 이상의 의미있는 문장
+- "안녕하세요", "도움이 필요해요", "궁금해요", "문제가 있어요" 등 고객 표현
+- 고객의 상황 설명, 감정 표현, 의견
 - 고객의 실명, 닉네임, 개인정보는 제거하고 문의 내용만 추출
 
-**중요**: 조금이라도 의심스럽거나 애매하면 무조건 제외하고 "구체적인 문의 내용 없음"으로 응답하세요.`
+**중요**: 의심스럽거나 애매한 경우 고객 작성 가능성을 우선하여 포함하세요. "구체적인 문의 내용 없음"은 정말로 아무 고객 내용이 없을 때만 사용하세요.`
         },
         {
           role: "user",
@@ -314,61 +317,51 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
         mockInquiry = `1. ${tagNames.join(', ')} 관련 문의가 있습니다.`;
       }
       
-      // description에서 내용 추출 (매니저/BOT 내용 극도로 엄격 제거)
-      if (ticket.description && ticket.description.length > 5) {
-        // 매니저/BOT 내용 극도로 엄격하게 제거
+      // description에서 내용 추출 (매니저/BOT 내용 적당히 엄격 제거)
+      if (ticket.description && ticket.description.length > 3) {
+        // 매니저/BOT 내용 적당히 제거 (더 관대하게)
         const cleanDescription = ticket.description
           .replace(/여신BOT|매니저L|매니저B|매니저D|Matrix_bot|Caller|상담원|직원|관리자|운영자/g, '')
-          .replace(/안녕하세요\s*고객님|안녕하세요|고객님|문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
-          .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요|확인|취소|네|아니오|예|알겠습니다|그렇습니다|맞습니다/g, '')
-          .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락|문의\s*주셔서|감사\s*드립니다/g, '')
-          .replace(/운영시간|평일|주말|공휴일|점심시간|감사합니다|수고하세요|좋은\s*하루|안내\s*드립니다/g, '')
+          .replace(/문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
+          .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요/g, '')
+          .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
+          .replace(/운영시간|평일|주말|공휴일|점심시간/g, '')
           .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
           .replace(/https?:\/\/[^\s]+/g, '')
           .trim();
         
-        // 상담원 멘트 패턴 추가 제거 (더 엄격)
-        const furtherClean = cleanDescription
-          .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
-          .replace(/운영시간|평일|주말|공휴일|점심시간/g, '')
-          .replace(/감사합니다|수고하세요|좋은\s*하루|안내|도움|문의|연락|확인/g, '')
-          .replace(/^\s*(네|예|아니오|감사|안녕|확인).*$/g, '')
-          .trim();
-        
-        // 길이 기준 더 엄격 적용 (10글자 이상)
-        if (furtherClean.length > 10 && !furtherClean.match(/^(네|예|아니오|감사|안녕|확인).*$/)) {
-          const descContent = furtherClean.substring(0, 100);
-          mockInquiry += mockInquiry ? `\n2. ${descContent}${furtherClean.length > 100 ? '...' : ''}` : `1. ${descContent}${furtherClean.length > 100 ? '...' : ''}`;
+        // 길이 기준 완화 (5글자 이상)
+        if (cleanDescription.length > 5) {
+          const descContent = cleanDescription.substring(0, 100);
+          mockInquiry += mockInquiry ? `\n2. ${descContent}${cleanDescription.length > 100 ? '...' : ''}` : `1. ${descContent}${cleanDescription.length > 100 ? '...' : ''}`;
         }
       }
       
-      // 댓글에서도 내용 추출 (매니저/BOT 내용 극도로 엄격 제거)
+      // 댓글에서도 내용 추출 (매니저/BOT 내용 적당히 제거)
       if (ticket.comments && Array.isArray(ticket.comments)) {
         let commentContent = '';
         ticket.comments.forEach(comment => {
-          if (comment.body && comment.body.length > 5) {
-            // 매니저/BOT 내용 극도로 엄격하게 제거
+          if (comment.body && comment.body.length > 3) {
+            // 매니저/BOT 내용 적당히 제거 (더 관대하게)
             const cleanComment = comment.body
               .replace(/여신BOT|매니저L|매니저B|매니저D|Matrix_bot|Caller|상담원|직원|관리자|운영자/g, '')
-              .replace(/안녕하세요\s*고객님|안녕하세요|고객님|문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
-              .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요|확인|취소|네|아니오|예|알겠습니다|그렇습니다|맞습니다/g, '')
-              .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락|문의\s*주셔서|감사\s*드립니다/g, '')
-              .replace(/운영시간|평일|주말|공휴일|점심시간|감사합니다|수고하세요|좋은\s*하루|안내\s*드립니다/g, '')
+              .replace(/문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
+              .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요/g, '')
+              .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
+              .replace(/운영시간|평일|주말|공휴일|점심시간/g, '')
               .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
               .replace(/https?:\/\/[^\s]+/g, '')
-              .replace(/^\s*(네|예|아니오|감사|안녕|확인).*$/g, '')
               .trim();
             
-            // 길이 기준 더 엄격 적용 (15글자 이상) 및 의미없는 패턴 제외
-            if (cleanComment.length > 15 && commentContent.length < 150 && 
-                !cleanComment.match(/^(네|예|아니오|감사|안녕|확인|도움|문의|연락).*$/)) {
+            // 길이 기준 완화 (5글자 이상)
+            if (cleanComment.length > 5 && commentContent.length < 200) {
               commentContent += cleanComment + ' ';
             }
           }
         });
         
-        // 최종 검증 더 엄격 적용 (20글자 이상)
-        if (commentContent.trim().length > 20) {
+        // 최종 검증 완화 (10글자 이상)
+        if (commentContent.trim().length > 10) {
           const nextNumber = mockInquiry.includes('2.') ? '3' : (mockInquiry.includes('1.') ? '2' : '1');
           mockInquiry += `\n${nextNumber}. ${commentContent.trim().substring(0, 80)}...`;
         }
@@ -382,13 +375,13 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
         contentFound = true;
       }
       
-      if (ticket.description && ticket.description.length > 5) {
+      if (ticket.description && ticket.description.length > 3) {
         const cleanDescription = ticket.description
           .replace(/여신BOT|매니저L|매니저B|매니저D|Matrix_bot|Caller|상담원|직원|관리자|운영자/g, '')
-          .replace(/안녕하세요\s*고객님|안녕하세요|고객님|문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
-          .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요|확인|취소|네|아니오|예|알겠습니다|그렇습니다|맞습니다/g, '')
+          .replace(/문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
+          .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요/g, '')
           .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
-          .replace(/운영시간|평일|주말|공휴일|점심시간|감사합니다|수고하세요/g, '')
+          .replace(/운영시간|평일|주말|공휴일|점심시간/g, '')
           .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
           .replace(/https?:\/\/[^\s]+/g, '')
           .trim();
@@ -404,21 +397,22 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
         }
       }
       
-      // 댓글도 확인 (매니저/BOT 내용 극도로 엄격 제거)
+      // 댓글도 확인 (매니저/BOT 내용 적당히 제거)
       if (!contentFound && ticket.comments && Array.isArray(ticket.comments)) {
         for (const comment of ticket.comments) {
-          if (comment.body && comment.body.length > 10) {
+          if (comment.body && comment.body.length > 5) {
             const cleanComment = comment.body
               .replace(/여신BOT|매니저L|매니저B|매니저D|Matrix_bot|Caller|상담원|직원|관리자|운영자/g, '')
-              .replace(/안녕하세요\s*고객님|안녕하세요|고객님|문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
-              .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요|확인|취소|네|아니오|예|알겠습니다|그렇습니다|맞습니다/g, '')
+              .replace(/문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
+              .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요/g, '')
               .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
-              .replace(/운영시간|평일|주말|공휴일|점심시간|감사합니다|수고하세요/g, '')
+              .replace(/운영시간|평일|주말|공휴일|점심시간/g, '')
               .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
               .replace(/https?:\/\/[^\s]+/g, '')
               .trim();
             
-            if (cleanComment.length > 20 && !cleanComment.match(/^(네|예|아니오|감사|안녕|확인|도움|문의|연락).*$/)) {
+            // 길이 기준 완화 (10글자 이상)
+            if (cleanComment.length > 10) {
               mockInquiry = `1. ${cleanComment.substring(0, 80)}...`;
               contentFound = true;
               break;
@@ -428,8 +422,8 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
       }
     }
     
-    // 의미있는 문의 내용이 없는 경우만 "없음" 표시 (기준 완화)
-    if (!mockInquiry || mockInquiry.trim().length < 5) {
+    // 의미있는 문의 내용이 없는 경우만 "없음" 표시 (기준 더 완화)
+    if (!mockInquiry || mockInquiry.trim().length < 3) {
       mockInquiry = customerTags.length > 0 
         ? `${customerTags.map(tag => tag.replace('고객_', '')).join(', ')} 관련 구체적인 문의 내용 없음` 
         : '구체적인 문의 내용 없음';
