@@ -47,8 +47,11 @@ ${tagContext}
 - **업무 관련 멘트 완전 차단: "빠른 시일 내", "답변드리겠습니다", "확인 후 연락", "운영시간", "평일", "주말", "공휴일" 등**
 - **인사말 완전 차단: "안녕하세요", "수고하세요", "좋은 하루", "감사합니다" 등 (고객이 작성했더라도 뒤에 구체적 문의가 없으면 제외)**
 - **단순 응답 완전 차단: "네", "예", "알겠습니다", "그렇습니다", "맞습니다" 등**
+- **개인정보 완전 제거: 이름, 이메일 주소, 전화번호, 휴대전화번호, 주소, 생년월일, 카드번호 등**
+- **시스템 안내 문구: "이름(name):", "휴대전화번호(country code is required):", "구매 목록(D):", "해결되지 않았어요", "상담원 연결" 등**
+- **양식 입력 안내: "name:", "country code is required", "구매 목록", "특별한 복사 가능" 등**
 - 인증번호, 전화번호, 연락처 정보
-- URL 링크 및 파일 관련 코드
+- URL 링크 및 파일 관련 코드  
 - Screenshot_, hcaptcha, img_ 등 시스템 파일명
 - 1~3글자의 무의미한 텍스트
 - **고객의 실명이나 개인정보 (이름, 닉네임 등은 제거하고 내용만 추출)**
@@ -146,6 +149,9 @@ export const analyzeSingleTicket = async (ticket) => {
 - "확인해드리겠습니다", "문의해주셔서 감사합니다", "도움이 되셨나요", "처리해드리겠습니다" 등 명백한 상담원 표현
 - "해결되었어요", "해결되지 않았어요", "더 궁금해요" 등 시스템 버튼 응답
 - "빠른 시일 내", "답변드리겠습니다", "확인 후 연락", "운영시간" 등 명백한 업무 표현
+- **개인정보 양식: "이름(name):", "휴대전화번호(country code is required):", 이메일 주소, 전화번호 등**
+- **시스템 안내: "구매 목록(D):", "해결되지 않았어요", "상담원 연결", "특별한 복사 가능" 등**
+- **양식 입력 필드: "name:", "country code is required", "@naver.com", "010-" 등**
 
 **적극 추출 대상 (관대한 기준):**
 - 고객이 직접 작성한 모든 문의, 질문, 요청, 불만, 칭찬
@@ -317,15 +323,20 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
         mockInquiry = `1. ${tagNames.join(', ')} 관련 문의가 있습니다.`;
       }
       
-      // description에서 내용 추출 (매니저/BOT 내용 적당히 엄격 제거)
+      // description에서 내용 추출 (매니저/BOT 내용 및 개인정보 엄격 제거)
       if (ticket.description && ticket.description.length > 3) {
-        // 매니저/BOT 내용 적당히 제거 (더 관대하게)
+        // 매니저/BOT 내용 및 개인정보 엄격하게 제거
         const cleanDescription = ticket.description
           .replace(/여신BOT|매니저L|매니저B|매니저D|Matrix_bot|Caller|상담원|직원|관리자|운영자/g, '')
           .replace(/문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
           .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요/g, '')
           .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
           .replace(/운영시간|평일|주말|공휴일|점심시간/g, '')
+          .replace(/이름\(name\):|휴대전화번호\(country\s*code\s*is\s*required\):|구매\s*목록\(D\):|특별한\s*복사\s*가능/g, '')
+          .replace(/name:|country\s*code\s*is\s*required|@naver\.com|@gmail\.com|@hanmail\.net|010-\d+/g, '')
+          .replace(/[가-힣]{2,4}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '') // 이메일 제거
+          .replace(/010\d{8}|010-\d{4}-\d{4}/g, '') // 전화번호 제거
+          .replace(/상담원\s*연결|해결되지\s*않았어요|구매\s*목록/g, '')
           .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
           .replace(/https?:\/\/[^\s]+/g, '')
           .trim();
@@ -337,18 +348,23 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
         }
       }
       
-      // 댓글에서도 내용 추출 (매니저/BOT 내용 적당히 제거)
+      // 댓글에서도 내용 추출 (매니저/BOT 내용 및 개인정보 제거)
       if (ticket.comments && Array.isArray(ticket.comments)) {
         let commentContent = '';
         ticket.comments.forEach(comment => {
           if (comment.body && comment.body.length > 3) {
-            // 매니저/BOT 내용 적당히 제거 (더 관대하게)
+            // 매니저/BOT 내용 및 개인정보 엄격하게 제거
             const cleanComment = comment.body
               .replace(/여신BOT|매니저L|매니저B|매니저D|Matrix_bot|Caller|상담원|직원|관리자|운영자/g, '')
               .replace(/문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
               .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요/g, '')
               .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
               .replace(/운영시간|평일|주말|공휴일|점심시간/g, '')
+              .replace(/이름\(name\):|휴대전화번호\(country\s*code\s*is\s*required\):|구매\s*목록\(D\):|특별한\s*복사\s*가능/g, '')
+              .replace(/name:|country\s*code\s*is\s*required|@naver\.com|@gmail\.com|@hanmail\.net|010-\d+/g, '')
+              .replace(/[가-힣]{2,4}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '') // 이메일 제거
+              .replace(/010\d{8}|010-\d{4}-\d{4}/g, '') // 전화번호 제거
+              .replace(/상담원\s*연결|해결되지\s*않았어요|구매\s*목록/g, '')
               .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
               .replace(/https?:\/\/[^\s]+/g, '')
               .trim();
@@ -382,6 +398,11 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
           .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요/g, '')
           .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
           .replace(/운영시간|평일|주말|공휴일|점심시간/g, '')
+          .replace(/이름\(name\):|휴대전화번호\(country\s*code\s*is\s*required\):|구매\s*목록\(D\):|특별한\s*복사\s*가능/g, '')
+          .replace(/name:|country\s*code\s*is\s*required|@naver\.com|@gmail\.com|@hanmail\.net|010-\d+/g, '')
+          .replace(/[가-힣]{2,4}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '') // 이메일 제거
+          .replace(/010\d{8}|010-\d{4}-\d{4}/g, '') // 전화번호 제거
+          .replace(/상담원\s*연결|해결되지\s*않았어요|구매\s*목록/g, '')
           .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
           .replace(/https?:\/\/[^\s]+/g, '')
           .trim();
@@ -397,7 +418,7 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
         }
       }
       
-      // 댓글도 확인 (매니저/BOT 내용 적당히 제거)
+      // 댓글도 확인 (매니저/BOT 내용 및 개인정보 제거)
       if (!contentFound && ticket.comments && Array.isArray(ticket.comments)) {
         for (const comment of ticket.comments) {
           if (comment.body && comment.body.length > 5) {
@@ -407,6 +428,11 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
               .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요/g, '')
               .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
               .replace(/운영시간|평일|주말|공휴일|점심시간/g, '')
+              .replace(/이름\(name\):|휴대전화번호\(country\s*code\s*is\s*required\):|구매\s*목록\(D\):|특별한\s*복사\s*가능/g, '')
+              .replace(/name:|country\s*code\s*is\s*required|@naver\.com|@gmail\.com|@hanmail\.net|010-\d+/g, '')
+              .replace(/[가-힣]{2,4}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '') // 이메일 제거
+              .replace(/010\d{8}|010-\d{4}-\d{4}/g, '') // 전화번호 제거
+              .replace(/상담원\s*연결|해결되지\s*않았어요|구매\s*목록/g, '')
               .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
               .replace(/https?:\/\/[^\s]+/g, '')
               .trim();
