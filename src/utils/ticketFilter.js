@@ -174,41 +174,41 @@ const matchesText = (ticket, searchText) => {
     // 2순위: GPT 분석 결과가 없으면 TicketList의 getUserComments와 동일한 로직 사용
     console.log(`ℹ️ 티켓 ${ticketId}: GPT 분석 결과 없음, 원본 댓글에서 추출`);
     
-    try {
+  try {
       // TicketList의 getUserComments와 동일한 로직
-      let allComments = [];
+    let allComments = [];
+    
+    const findComments = (obj) => {
+      if (!obj) return;
       
-      const findComments = (obj) => {
-        if (!obj) return;
-        
-        if (Array.isArray(obj)) {
-          obj.forEach(item => findComments(item));
-        } else if (typeof obj === 'object') {
-          if (obj.comments && Array.isArray(obj.comments)) {
-            allComments = allComments.concat(obj.comments);
-            obj.comments.forEach(comment => findComments(comment));
-          }
-          
-          if ((obj.body || obj.plain_body) && obj.hasOwnProperty('author_id')) {
-            allComments.push(obj);
-          }
-          
-          Object.values(obj).forEach(value => {
-            if (typeof value === 'object') {
-              findComments(value);
-            }
-          });
+      if (Array.isArray(obj)) {
+        obj.forEach(item => findComments(item));
+      } else if (typeof obj === 'object') {
+        if (obj.comments && Array.isArray(obj.comments)) {
+          allComments = allComments.concat(obj.comments);
+          obj.comments.forEach(comment => findComments(comment));
         }
-      };
-      
-      findComments(ticket);
-      
+        
+        if ((obj.body || obj.plain_body) && obj.hasOwnProperty('author_id')) {
+          allComments.push(obj);
+        }
+        
+        Object.values(obj).forEach(value => {
+          if (typeof value === 'object') {
+            findComments(value);
+          }
+        });
+      }
+    };
+    
+    findComments(ticket);
+    
       // 고객 문의 내용만 추출 (시스템 메시지, BOT 메시지 제외)
       const excludeAuthors = ['여신BOT', '매니저L', '매니저B', '매니저D', 'Matrix_bot'];
       let customerContent = '';
       
-      allComments.forEach(comment => {
-        if (comment.body) {
+    allComments.forEach(comment => {
+      if (comment.body) {
           // author_id 확인하여 고객 댓글만 포함
           const isSystemMessage = excludeAuthors.some(excludeAuthor => 
             comment.body.includes(excludeAuthor)
@@ -217,8 +217,8 @@ const matchesText = (ticket, searchText) => {
           if (!isSystemMessage) {
             customerContent += comment.body + ' ';
           }
-        }
-        if (comment.plain_body && comment.plain_body !== comment.body) {
+      }
+      if (comment.plain_body && comment.plain_body !== comment.body) {
           const isSystemMessage = excludeAuthors.some(excludeAuthor => 
             comment.plain_body.includes(excludeAuthor)
           );
@@ -226,9 +226,9 @@ const matchesText = (ticket, searchText) => {
           if (!isSystemMessage) {
             customerContent += comment.plain_body + ' ';
           }
-        }
-      });
-      
+      }
+    });
+    
       // description은 고객 문의일 가능성이 높으므로 포함
       if (ticket.description && ticket.description.trim()) {
         customerContent += ticket.description + ' ';
@@ -236,7 +236,7 @@ const matchesText = (ticket, searchText) => {
       
       contentToSearch = customerContent.trim();
       console.log(`📝 티켓 ${ticketId} 고객 문의 내용 추출 (${contentToSearch.length}자)`);
-    } catch (error) {
+  } catch (error) {
       console.warn(`❌ 티켓 ${ticketId} 댓글 추출 실패:`, error);
       contentToSearch = '';
     }
