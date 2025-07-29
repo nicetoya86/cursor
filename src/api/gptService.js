@@ -205,9 +205,30 @@ export const analyzeTicketsWithGPT = async (tickets, onProgress = null) => {
 
   for (let i = 0; i < tickets.length; i++) {
     try {
-      // 제목에 "수신전화" 또는 "발신전화"가 포함된 경우 분석에서 완전히 제외
-      if (tickets[i].subject && (tickets[i].subject.includes('수신전화') || tickets[i].subject.includes('발신전화'))) {
-        console.log(`티켓 ${tickets[i].id}: 제목에 전화 관련 키워드 포함으로 분석 결과에서 제외`);
+      // 제외 조건 검사 (제목 + 태그)
+      const shouldExclude = () => {
+        const ticket = tickets[i];
+        
+        // 제외할 제목 키워드
+        const excludeKeywords = ['수신전화', '발신전화', 'LMS 전송'];
+        if (ticket.subject) {
+          const hasExcludedKeyword = excludeKeywords.some(keyword => 
+            ticket.subject.includes(keyword)
+          );
+          if (hasExcludedKeyword) return true;
+        }
+        
+        // 고객 태그가 없는 경우 제외
+        const customerTags = ticket.tags && Array.isArray(ticket.tags) 
+          ? ticket.tags.filter(tag => tag && tag.startsWith('고객_'))
+          : [];
+        if (customerTags.length === 0) return true;
+        
+        return false;
+      };
+      
+      if (shouldExclude()) {
+        console.log(`티켓 ${tickets[i].id}: 제외 조건 (제목 또는 태그 없음)으로 분석 결과에서 제외`);
         excludedCount++;
         
         // 진행률 콜백 호출 (제외된 티켓도 진행률에 포함)
@@ -290,9 +311,28 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
     
     const ticket = tickets[i];
     
-    // 제목에 "수신전화" 또는 "발신전화"가 포함된 경우 분석에서 완전히 제외
-    if (ticket.subject && (ticket.subject.includes('수신전화') || ticket.subject.includes('발신전화'))) {
-      console.log(`티켓 ${ticket.id}: 제목에 전화 관련 키워드 포함으로 모의 분석 결과에서 제외`);
+    // 제외 조건 검사 (제목 + 태그)
+    const shouldExclude = () => {
+      // 제외할 제목 키워드
+      const excludeKeywords = ['수신전화', '발신전화', 'LMS 전송'];
+      if (ticket.subject) {
+        const hasExcludedKeyword = excludeKeywords.some(keyword => 
+          ticket.subject.includes(keyword)
+        );
+        if (hasExcludedKeyword) return true;
+      }
+      
+      // 고객 태그가 없는 경우 제외
+      const customerTags = ticket.tags && Array.isArray(ticket.tags) 
+        ? ticket.tags.filter(tag => tag && tag.startsWith('고객_'))
+        : [];
+      if (customerTags.length === 0) return true;
+      
+      return false;
+    };
+    
+    if (shouldExclude()) {
+      console.log(`티켓 ${ticket.id}: 제외 조건 (제목 또는 태그 없음)으로 모의 분석 결과에서 제외`);
       excludedCount++;
       
       // 진행률 콜백 호출 (제외된 티켓도 진행률에 포함)

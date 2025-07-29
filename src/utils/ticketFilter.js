@@ -285,14 +285,23 @@ const matchesPriority = (ticketPriority, priorityFilter) => {
   });
 };
 
-// 전화 관련 제목 검사 (제외할 제목들)
-const isCallRelatedTitle = (subject) => {
+// 제외할 제목 검사 (전화 관련 + LMS 전송)
+const isExcludedTitle = (subject) => {
   if (!subject) return false;
   
-  const callKeywords = ['발신전화', '부재중', '수신전화'];
+  const excludeKeywords = ['발신전화', '부재중', '수신전화', 'LMS 전송'];
   const subjectLower = subject.toLowerCase();
   
-  return callKeywords.some(keyword => subjectLower.includes(keyword.toLowerCase()));
+  return excludeKeywords.some(keyword => subjectLower.includes(keyword.toLowerCase()));
+};
+
+// 태그가 없는 티켓 검사 (제외할 티켓들)
+const hasNoTags = (tags) => {
+  if (!tags || !Array.isArray(tags)) return true;
+  
+  // 고객_ 태그가 있는지 확인
+  const hasCustomerTag = tags.some(tag => tag && tag.startsWith('고객_'));
+  return !hasCustomerTag;
 };
 
 // 메인 필터링 함수 (상세 디버깅 추가)
@@ -338,12 +347,23 @@ export const filterTickets = (tickets, filters) => {
   console.log('🎯 필터 적용 여부:', hasAnyFilter);
   
   if (!hasAnyFilter) {
-    // 필터가 없어도 전화 관련 제목은 제외
+    // 필터가 없어도 제외 조건 적용 (제목 + 태그)
     const results = tickets.filter(ticket => {
       if (!ticket) return false;
-      return !isCallRelatedTitle(ticket.subject);
+      
+      // 제외할 제목 검사
+      if (isExcludedTitle(ticket.subject)) {
+        return false;
+      }
+      
+      // 태그가 없는 티켓 제외
+      if (hasNoTags(ticket.tags)) {
+        return false;
+      }
+      
+      return true;
     });
-    console.log(`✅ 필터 없음 - 전화 관련 제외 후: ${results.length}/${tickets.length}개 티켓 반환`);
+    console.log(`✅ 필터 없음 - 제외 조건 적용 후: ${results.length}/${tickets.length}개 티켓 반환`);
     return results;
   }
 
@@ -353,9 +373,15 @@ export const filterTickets = (tickets, filters) => {
     const ticketId = ticket.id || 'unknown';
     console.log(`🎫 티켓 ${ticketId} 필터링 시작`);
 
-    // 전화 관련 제목 제외
-    if (isCallRelatedTitle(ticket.subject)) {
-      console.log(`❌ 티켓 ${ticketId}: 전화 관련 제목으로 제외`);
+    // 제외할 제목 검사 (전화 관련 + LMS 전송)
+    if (isExcludedTitle(ticket.subject)) {
+      console.log(`❌ 티켓 ${ticketId}: 제외 대상 제목으로 제외`);
+      return false;
+    }
+
+    // 태그가 없는 티켓 제외
+    if (hasNoTags(ticket.tags)) {
+      console.log(`❌ 티켓 ${ticketId}: 고객 태그가 없어서 제외`);
       return false;
     }
 
