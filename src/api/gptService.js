@@ -43,13 +43,14 @@ ${tagContext}
 - **매니저/직원/상담원이 작성한 모든 내용 완전 차단 (여신BOT, 매니저L, 매니저B, 매니저D, Matrix_bot, Caller, 상담원, 직원, 관리자, 운영자 등)**
 - **시스템 자동 응답 및 모든 BOT 메시지 완전 제거**
 - **상담원/매니저 멘트 완전 차단: "안녕하세요", "고객님", "문의해주셔서", "감사합니다", "확인해드리겠습니다", "도움이 되셨나요", "처리해드리겠습니다" 등**
-- **시스템 버튼 응답 완전 차단: "해결되었어요", "해결되지 않았어요", "더 궁금해요", "확인", "취소", "네", "아니오" 등**
+- **시스템 버튼 응답 완전 차단: "해결되었어요", "해결되지 않았어요", "더 궁금해요", "확인", "취소", "네", "아니오", "매니져연결", "매니저연결" 등**
 - **업무 관련 멘트 완전 차단: "빠른 시일 내", "답변드리겠습니다", "확인 후 연락", "운영시간", "평일", "주말", "공휴일" 등**
 - **인사말 완전 차단: "안녕하세요", "수고하세요", "좋은 하루", "감사합니다" 등 (고객이 작성했더라도 뒤에 구체적 문의가 없으면 제외)**
 - **단순 응답 완전 차단: "네", "예", "알겠습니다", "그렇습니다", "맞습니다" 등**
 - **개인정보 완전 제거: 이름, 이메일 주소, 전화번호, 휴대전화번호, 주소, 생년월일, 카드번호 등**
-- **시스템 안내 문구: "이름(name):", "휴대전화번호(country code is required):", "구매 목록(D):", "해결되지 않았어요", "상담원 연결" 등**
-- **양식 입력 안내: "name:", "country code is required", "구매 목록", "특별한 복사 가능" 등**
+- **시스템 안내 문구: "이름(name):", "휴대전화번호(country code is required):", "구매 목록(D):", "해결되지 않았어요", "상담원 연결", "매니져연결" 등**
+- **양식 입력 안내: "name:", "country code is required", "구매 목록", "특별한 복사 가능", "2.5버전업", "디저트곰" 등**
+- **포인트/적립 관련 시스템 안내: "추천인 코드 강제입력 처리 도메인", "추천인 포인트 5,000p 적립", "사절" 등**
 - 인증번호, 전화번호, 연락처 정보
 - URL 링크 및 파일 관련 코드  
 - Screenshot_, hcaptcha, img_ 등 시스템 파일명
@@ -142,25 +143,24 @@ export const analyzeSingleTicket = async (ticket) => {
           role: "system",
           content: `당신은 Zendesk 티켓 분석 전문가입니다. 티켓 제목에 '수신전화' 또는 '발신전화'가 포함되면 무조건 '문의 내용 없음'으로 응답하세요. 
 
-고객의 태그(${customerTags.map(tag => tag.replace('고객_', '')).join(', ')})와 관련된 내용을 추출하되, **넓은 범위에서 관대하게 고객이 직접 작성한 내용을 모두** 추출하세요.
+고객의 태그(${customerTags.map(tag => tag.replace('고객_', '')).join(', ')})와 관련된 내용을 추출하되, **오직 고객이 직접 작성한 순수한 문의 내용만** 추출하세요.
 
-**반드시 제외 - 명백한 상담원/시스템 내용만:**
-- 여신BOT, 매니저L, 매니저B, 매니저D, Matrix_bot, Caller, 상담원, 직원, 관리자, 운영자가 명백하게 작성한 내용
-- "확인해드리겠습니다", "문의해주셔서 감사합니다", "도움이 되셨나요", "처리해드리겠습니다" 등 명백한 상담원 표현
-- "해결되었어요", "해결되지 않았어요", "더 궁금해요" 등 시스템 버튼 응답
-- "빠른 시일 내", "답변드리겠습니다", "확인 후 연락", "운영시간" 등 명백한 업무 표현
-- **개인정보 양식: "이름(name):", "휴대전화번호(country code is required):", 이메일 주소, 전화번호 등**
-- **시스템 안내: "구매 목록(D):", "해결되지 않았어요", "상담원 연결", "특별한 복사 가능" 등**
-- **양식 입력 필드: "name:", "country code is required", "@naver.com", "010-" 등**
+**절대 제외 - 무조건 차단:**
+- 여신BOT, 매니저L, 매니저B, 매니저D, Matrix_bot, Caller, 상담원, 직원, 관리자, 운영자가 작성한 모든 내용
+- "확인해드리겠습니다", "문의해주셔서 감사합니다", "도움이 되셨나요", "처리해드리겠습니다" 등 상담원 표현
+- "해결되었어요", "해결되지 않았어요", "더 궁금해요", "매니져연결", "매니자연결" 등 시스템 버튼
+- "빠른 시일 내", "답변드리겠습니다", "확인 후 연락", "운영시간" 등 업무 표현
+- **개인정보: 이름, 이메일, 전화번호 등**
+- **시스템 안내: "추천인 코드", "포인트 적립", "2.5버전업", "디저트곰" 등**
+- **양식 필드: "name:", "country code is required" 등**
 
-**적극 추출 대상 (관대한 기준):**
-- 고객이 직접 작성한 모든 문의, 질문, 요청, 불만, 칭찬
-- 최소 3글자 이상의 의미있는 문장
-- "안녕하세요", "도움이 필요해요", "궁금해요", "문제가 있어요" 등 고객 표현
-- 고객의 상황 설명, 감정 표현, 의견
-- 고객의 실명, 닉네임, 개인정보는 제거하고 문의 내용만 추출
+**중요 지침:**
+1. **중복 내용 절대 금지** - 같은 내용을 여러 번 출력하지 마세요
+2. **매니저 내용 완전 차단** - 조금이라도 의심되면 제외
+3. **오직 고객 문의만** - 실제 고객이 작성한 구체적인 문의, 질문, 요청만 추출
+4. **한 번만 출력** - 같은 의미의 내용은 한 번만 포함
 
-**중요**: 의심스럽거나 애매한 경우 고객 작성 가능성을 우선하여 포함하세요. "구체적인 문의 내용 없음"은 정말로 아무 고객 내용이 없을 때만 사용하세요.`
+고객이 직접 작성한 구체적인 문의 내용이 정말로 없으면 "구체적인 문의 내용 없음"으로 응답하세요.`
         },
         {
           role: "user",
@@ -323,13 +323,13 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
         mockInquiry = `1. ${tagNames.join(', ')} 관련 문의가 있습니다.`;
       }
       
-      // description에서 내용 추출 (매니저/BOT 내용 및 개인정보 엄격 제거)
+      // description에서 내용 추출 (매니저/BOT 내용 및 개인정보 극도로 엄격 제거)
       if (ticket.description && ticket.description.length > 3) {
-        // 매니저/BOT 내용 및 개인정보 엄격하게 제거
+        // 매니저/BOT 내용 및 개인정보 극도로 엄격하게 제거
         const cleanDescription = ticket.description
           .replace(/여신BOT|매니저L|매니저B|매니저D|Matrix_bot|Caller|상담원|직원|관리자|운영자/g, '')
           .replace(/문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
-          .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요/g, '')
+          .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요|매니져연결|매니자연결/g, '')
           .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
           .replace(/운영시간|평일|주말|공휴일|점심시간/g, '')
           .replace(/이름\(name\):|휴대전화번호\(country\s*code\s*is\s*required\):|구매\s*목록\(D\):|특별한\s*복사\s*가능/g, '')
@@ -337,27 +337,30 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
           .replace(/[가-힣]{2,4}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '') // 이메일 제거
           .replace(/010\d{8}|010-\d{4}-\d{4}/g, '') // 전화번호 제거
           .replace(/상담원\s*연결|해결되지\s*않았어요|구매\s*목록/g, '')
+          .replace(/추천인\s*코드|포인트\s*적립|2\.5버전업|디저트곰|사절/g, '')
           .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
           .replace(/https?:\/\/[^\s]+/g, '')
           .trim();
         
-        // 길이 기준 완화 (5글자 이상)
-        if (cleanDescription.length > 5) {
+        // 길이 기준 및 중복 방지 (8글자 이상, 의미있는 내용만)
+        if (cleanDescription.length > 8 && !mockInquiry.includes(cleanDescription.substring(0, 20))) {
           const descContent = cleanDescription.substring(0, 100);
           mockInquiry += mockInquiry ? `\n2. ${descContent}${cleanDescription.length > 100 ? '...' : ''}` : `1. ${descContent}${cleanDescription.length > 100 ? '...' : ''}`;
         }
       }
       
-      // 댓글에서도 내용 추출 (매니저/BOT 내용 및 개인정보 제거)
+      // 댓글에서도 내용 추출 (매니저/BOT 내용 및 개인정보 극도로 엄격 제거)
       if (ticket.comments && Array.isArray(ticket.comments)) {
         let commentContent = '';
+        let addedContents = new Set(); // 중복 방지용
+        
         ticket.comments.forEach(comment => {
           if (comment.body && comment.body.length > 3) {
-            // 매니저/BOT 내용 및 개인정보 엄격하게 제거
+            // 매니저/BOT 내용 및 개인정보 극도로 엄격하게 제거
             const cleanComment = comment.body
               .replace(/여신BOT|매니저L|매니저B|매니저D|Matrix_bot|Caller|상담원|직원|관리자|운영자/g, '')
               .replace(/문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
-              .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요/g, '')
+              .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요|매니져연결|매니자연결/g, '')
               .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
               .replace(/운영시간|평일|주말|공휴일|점심시간/g, '')
               .replace(/이름\(name\):|휴대전화번호\(country\s*code\s*is\s*required\):|구매\s*목록\(D\):|특별한\s*복사\s*가능/g, '')
@@ -365,25 +368,28 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
               .replace(/[가-힣]{2,4}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '') // 이메일 제거
               .replace(/010\d{8}|010-\d{4}-\d{4}/g, '') // 전화번호 제거
               .replace(/상담원\s*연결|해결되지\s*않았어요|구매\s*목록/g, '')
+              .replace(/추천인\s*코드|포인트\s*적립|2\.5버전업|디저트곰|사절/g, '')
               .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
               .replace(/https?:\/\/[^\s]+/g, '')
               .trim();
             
-            // 길이 기준 완화 (5글자 이상)
-            if (cleanComment.length > 5 && commentContent.length < 200) {
+            // 길이 기준 강화 및 중복 방지 (8글자 이상, 중복 없음)
+            const contentKey = cleanComment.substring(0, 20);
+            if (cleanComment.length > 8 && !addedContents.has(contentKey) && commentContent.length < 150) {
               commentContent += cleanComment + ' ';
+              addedContents.add(contentKey);
             }
           }
         });
         
-        // 최종 검증 완화 (10글자 이상)
-        if (commentContent.trim().length > 10) {
+        // 최종 검증 강화 (15글자 이상, 중복 없음)
+        if (commentContent.trim().length > 15 && !mockInquiry.includes(commentContent.trim().substring(0, 20))) {
           const nextNumber = mockInquiry.includes('2.') ? '3' : (mockInquiry.includes('1.') ? '2' : '1');
           mockInquiry += `\n${nextNumber}. ${commentContent.trim().substring(0, 80)}...`;
         }
       }
     } else {
-      // 태그가 없는 경우도 더 엄격한 필터링을 적용합니다.
+      // 태그가 없는 경우도 중복 방지와 더 강한 필터링을 적용합니다.
       let contentFound = false;
       
       if (ticket.subject && !ticket.subject.includes('님과의 대화')) {
@@ -403,11 +409,13 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
           .replace(/[가-힣]{2,4}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '') // 이메일 제거
           .replace(/010\d{8}|010-\d{4}-\d{4}/g, '') // 전화번호 제거
           .replace(/상담원\s*연결|해결되지\s*않았어요|구매\s*목록/g, '')
+          .replace(/추천인\s*코드|포인트\s*적립|2\.5버전업|디저트곰|사절/g, '')
           .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
           .replace(/https?:\/\/[^\s]+/g, '')
           .trim();
         
-        if (cleanDescription.length > 5) {
+        // 길이 기준 강화 (8글자 이상)
+        if (cleanDescription.length > 8) {
           const descContent = cleanDescription.substring(0, 100);
           if (contentFound) {
             mockInquiry += `\n2. ${descContent}${cleanDescription.length > 100 ? '...' : ''}`;
@@ -418,7 +426,7 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
         }
       }
       
-      // 댓글도 확인 (매니저/BOT 내용 및 개인정보 제거)
+      // 댓글도 확인 (매니저/BOT 내용 및 개인정보 극도로 엄격 제거)
       if (!contentFound && ticket.comments && Array.isArray(ticket.comments)) {
         for (const comment of ticket.comments) {
           if (comment.body && comment.body.length > 5) {
@@ -433,12 +441,13 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
               .replace(/[가-힣]{2,4}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '') // 이메일 제거
               .replace(/010\d{8}|010-\d{4}-\d{4}/g, '') // 전화번호 제거
               .replace(/상담원\s*연결|해결되지\s*않았어요|구매\s*목록/g, '')
+              .replace(/추천인\s*코드|포인트\s*적립|2\.5버전업|디저트곰|사절/g, '')
               .replace(/Screenshot_\w+|hcaptcha|img_\w+/g, '')
               .replace(/https?:\/\/[^\s]+/g, '')
               .trim();
             
-            // 길이 기준 완화 (10글자 이상)
-            if (cleanComment.length > 10) {
+            // 길이 기준 강화 (15글자 이상)
+            if (cleanComment.length > 15) {
               mockInquiry = `1. ${cleanComment.substring(0, 80)}...`;
               contentFound = true;
               break;
