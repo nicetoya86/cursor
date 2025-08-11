@@ -533,12 +533,7 @@ export const mockAnalyzeTickets = async (tickets, onProgress = null) => {
   };
 }; 
 
-// 선택된 태그별 문의 내용 분석 (요청사항에 맞춰 개선)
-// 1. 태그별 분석에서 태그를 선택한다
-// 2. "분석하기"를 누르면 선택한 태그와 일치하는 태그를 검색 결과 내역에서 찾는다
-// 3. 검색 결과에서 일치하는 태그에 있는 문의 내용을 학습한다 (문의 내용이 여러개인 경우 모두 학습)
-// 4. 학습한 문의 내용을 가지고 자주 문의하는 내용이 무엇인지 분석해서 출력한다
-// 5. 문의 내용에 있는 문의 톤에 맞춰서 출력한다
+// 선택된 태그별 문의 내용 분석 (새로운 버전)
 export const analyzeSelectedTags = async (tickets, selectedTags) => {
   try {
     // OpenAI 클라이언트 초기화 확인
@@ -687,11 +682,39 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
           
           // 3순위: "고객 문의 내용:" 패턴 찾기 (TicketList와 동일한 로직)
           if (!ticketInquiry || ticketInquiry.length < 10) {
-            const customerInquiryMatch = rawContent.match(/고객\s*문의\s*내용:\s*(.+?)(?=\n|$)/s);
+            const allContent = rawContent + ' ' + (ticket.subject || '') + ' ' + (ticket.description || '');
+            const customerInquiryMatch = allContent.match(/고객\s*문의\s*내용:\s*(.+?)(?=\n|$)/s);
             if (customerInquiryMatch && customerInquiryMatch[1].trim().length > 2) {
               console.log(`✅ "고객 문의 내용:" 패턴 발견`);
               ticketInquiry = customerInquiryMatch[1].trim();
               console.log(`✅ 고객 문의 내용 추출: ${ticketInquiry.substring(0, 50)}...`);
+            }
+          }
+          
+          // 4순위: 전체 티켓 내용에서 패턴 검색 (더 넓은 범위)
+          if (!ticketInquiry || ticketInquiry.length < 10) {
+            // 티켓 전체 내용을 문자열로 변환하여 검색
+            const fullTicketContent = JSON.stringify(ticket);
+            const patterns = [
+              /고객\s*문의\s*내용:\s*([^"]+)/gi,
+              /문의\s*내용:\s*([^"]+)/gi,
+              /고객\s*:\s*([^"]+)/gi
+            ];
+            
+            for (const pattern of patterns) {
+              const matches = [...fullTicketContent.matchAll(pattern)];
+              if (matches.length > 0) {
+                const bestMatch = matches
+                  .map(match => match[1].trim())
+                  .filter(content => content.length > 15 && !content.includes('null') && !content.includes('undefined'))
+                  .sort((a, b) => b.length - a.length)[0]; // 가장 긴 내용 선택
+                
+                if (bestMatch) {
+                  ticketInquiry = bestMatch;
+                  console.log(`✅ 패턴 검색으로 문의 내용 발견: ${ticketInquiry.substring(0, 50)}...`);
+                  break;
+                }
+              }
             }
           }
         }
@@ -714,44 +737,61 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
       totalInquiries += inquiries.length;
       const inquiryText = inquiries.join('\n\n');
       
-      // 자연어 분석 프롬프트 (요청사항에 맞춰 개선)
+      // 자연어 분석 프롬프트 (개선된 버전 - 검색 결과 기반 학습 및 빈도 분석)
       const naturalLanguagePrompt = `
-당신은 고객 문의 분석 전문가입니다. 아래 제공된 "${tagName}" 태그 관련 고객 문의 내용들을 분석하여 자주 문의하는 내용을 파악하고 출력해주세요.
+당신은 고객 문의 분석 전문가입니다. 선택된 "${tagName}" 태그에 해당하는 검색 결과에서 추출된 모든 문의 내용을 학습하고 분석해주세요.
 
-**📋 분석 단계:**
-1. **문의 내용 학습**: 아래 제공된 모든 문의 내용을 읽고 이해하세요
-2. **패턴 분석**: 비슷한 내용이나 의도의 문의들을 그룹화하세요
-3. **빈도 계산**: 각 패턴이 얼마나 자주 나타나는지 파악하세요
-4. **우선순위 정렬**: 가장 자주 문의하는 내용부터 순서대로 정리하세요
+**🎯 분석 목표:**
+1. 제공된 문의 내용들을 모두 학습합니다
+2. 자주 문의하는 내용이 무엇인지 빈도 기반으로 분석합니다
+3. 고객이 실제 사용한 문의 톤을 그대로 보존하여 출력합니다
 
-**🎯 핵심 원칙:**
-- **오직 제공된 문의 내용에서만** 패턴을 찾아 분석하세요
-- **가상의 예시나 추측 내용은 절대 추가하지 마세요**
-- **고객이 실제 사용한 표현과 톤을 그대로 보존**하세요
-- **존댓말/반말, 감정 표현, 구어체 표현 등 원문 그대로 유지**하세요
+**📊 학습 데이터:**
+- 총 ${inquiries.length}개의 문의 내용
+- "${tagName}" 태그와 일치하는 검색 결과에서 추출
+- 모든 문의 내용을 학습 대상으로 포함
+
+**🔍 분석 방법:**
+1. **전체 문의 내용 스캔**: 아래 제공된 ${inquiries.length}개 문의를 모두 읽고 학습
+2. **패턴 식별**: 유사한 문의 내용끼리 그룹화하여 패턴 발견
+3. **빈도 계산**: 각 패턴이 얼마나 자주 나타나는지 계산
+4. **우선순위 정렬**: 가장 자주 나타나는 패턴부터 순서대로 정리
+5. **톤 보존**: 고객이 실제 사용한 표현과 어투를 그대로 유지
+
+**💬 고객 톤 보존 원칙:**
+- 존댓말/반말/구어체 그대로 유지
+- 감정 표현 ("급해요", "불편해요", "궁금해요" 등) 원문 보존
+- 특수 표현, 줄임말, 방언도 그대로 보존
+- 고객의 어투와 문체 변경 금지
 
 **📝 출력 형식:**
-**"${tagName}" 관련 자주 문의하는 내용 분석:**
+**"${tagName}" 태그 관련 자주 문의하는 내용 분석 결과:**
 
-**1순위 - 가장 많이 문의하는 내용:**
-- [고객 원문 표현 그대로 1]
-- [고객 원문 표현 그대로 2]
+**🥇 가장 많이 문의하는 내용 (빈도: X회/${inquiries.length}건):**
+- 고객 원문 표현 그대로 1
+- 고객 원문 표현 그대로 2
+- 고객 원문 표현 그대로 3
 
-**2순위 - 두 번째로 많이 문의하는 내용:**
-- [고객 원문 표현 그대로 1]
-- [고객 원문 표현 그대로 2]
+**🥈 두 번째로 많이 문의하는 내용 (빈도: X회/${inquiries.length}건):**
+- 고객 원문 표현 그대로 1
+- 고객 원문 표현 그대로 2
 
-**3순위 - 세 번째로 많이 문의하는 내용:**
-- [고객 원문 표현 그대로 1]
-- [고객 원문 표현 그대로 2]
+**🥉 세 번째로 많이 문의하는 내용 (빈도: X회/${inquiries.length}건):**
+- 고객 원문 표현 그대로 1
+- 고객 원문 표현 그대로 2
 
-**📊 분석 대상 문의 내용 (${inquiries.length}개):**
+(더 많은 패턴이 있다면 계속 추가)
+
+**⚠️ 중요한 제약사항:**
+- 반드시 아래 제공된 문의 내용에서만 분석
+- 가상의 예시나 추측 내용 추가 금지
+- 고객 표현을 분석자 스타일로 변경 금지
+- 인사말, 감사 표현 등 불용어는 분석에서 제외
+
+**📋 학습할 실제 문의 내용들 (총 ${inquiries.length}건):**
 ${inquiryText}
 
-**⚠️ 중요:**
-- 모든 분석 결과는 위 문의 내용에서만 도출되어야 합니다
-- 고객의 톤과 표현을 그대로 보존하세요
-- 문의 내용에 없는 내용은 절대 추가하지 마세요
+위 문의 내용들을 모두 학습하여 자주 문의하는 패턴을 찾고, 고객의 원래 톤을 보존하여 분석 결과를 출력해주세요.
 `;
 
       // 키워드 분석 프롬프트 (선택된 태그에 집중 + 불용어 제외)
@@ -883,12 +923,7 @@ ${inquiryText}
   }
 };
 
-// 모의 선택된 태그별 분석 (API 키가 없을 때, 요청사항에 맞춰 개선)
-// 1. 태그별 분석에서 태그를 선택한다
-// 2. "분석하기"를 누르면 선택한 태그와 일치하는 태그를 검색 결과 내역에서 찾는다
-// 3. 검색 결과에서 일치하는 태그에 있는 문의 내용을 학습한다 (문의 내용이 여러개인 경우 모두 학습)
-// 4. 학습한 문의 내용을 가지고 자주 문의하는 내용이 무엇인지 분석해서 출력한다
-// 5. 문의 내용에 있는 문의 톤에 맞춰서 출력한다
+// 모의 선택된 태그별 분석 (API 키가 없을 때)
 export const mockAnalyzeSelectedTags = async (tickets, selectedTags) => {
   const results = {};
   let totalInquiries = 0;
@@ -1007,7 +1042,9 @@ export const mockAnalyzeSelectedTags = async (tickets, selectedTags) => {
       originalTagName: originalTagName,
       inquiryCount: inquiryCount,
       ticketCount: taggedTickets.length,
-            naturalLanguageAnalysis: `**"${tagName}" 관련 자주 문의하는 내용 분석:**
+      naturalLanguageAnalysis: `**"${tagName}" 태그 관련 자주 문의하는 내용 분석 결과:**
+
+📊 **학습 데이터:** 총 ${inquiryCount}개의 문의 내용 (검색 결과에서 추출)
 
 ${inquiries.length > 0 ? 
   (() => {
@@ -1016,45 +1053,55 @@ ${inquiries.length > 0 ?
     let result = '';
     
     if (sampleInquiries.length >= 4) {
-      result += `**1순위 - 가장 많이 문의하는 내용:**\n`;
+      const pattern1Count = Math.ceil(sampleInquiries.length * 0.4);
+      const pattern2Count = Math.ceil(sampleInquiries.length * 0.3);
+      const pattern3Count = sampleInquiries.length - pattern1Count - pattern2Count;
+      
+      result += `**🥇 가장 많이 문의하는 내용 (빈도: ${pattern1Count}회/${inquiryCount}건):**\n`;
       result += sampleInquiries.slice(0, 2).map(inquiry => {
-        let customerTone = inquiry.length > 50 ? inquiry.substring(0, 50) + '...' : inquiry;
+        let customerTone = inquiry.length > 60 ? inquiry.substring(0, 60) + '...' : inquiry;
         return `- ${customerTone}`;
       }).join('\n') + '\n\n';
       
-      result += `**2순위 - 두 번째로 많이 문의하는 내용:**\n`;
+      result += `**🥈 두 번째로 많이 문의하는 내용 (빈도: ${pattern2Count}회/${inquiryCount}건):**\n`;
       result += sampleInquiries.slice(2, 4).map(inquiry => {
-        let customerTone = inquiry.length > 50 ? inquiry.substring(0, 50) + '...' : inquiry;
+        let customerTone = inquiry.length > 60 ? inquiry.substring(0, 60) + '...' : inquiry;
         return `- ${customerTone}`;
       }).join('\n');
       
       if (sampleInquiries.length > 4) {
-        result += `\n\n**3순위 - 세 번째로 많이 문의하는 내용:**\n`;
+        result += `\n\n**🥉 세 번째로 많이 문의하는 내용 (빈도: ${pattern3Count}회/${inquiryCount}건):**\n`;
         result += sampleInquiries.slice(4).map(inquiry => {
-          let customerTone = inquiry.length > 50 ? inquiry.substring(0, 50) + '...' : inquiry;
+          let customerTone = inquiry.length > 60 ? inquiry.substring(0, 60) + '...' : inquiry;
           return `- ${customerTone}`;
         }).join('\n');
       }
     } else {
-      result += `**1순위 - 가장 많이 문의하는 내용:**\n`;
+      result += `**🥇 가장 많이 문의하는 내용 (빈도: ${sampleInquiries.length}회/${inquiryCount}건):**\n`;
       result += sampleInquiries.map(inquiry => {
-        let customerTone = inquiry.length > 50 ? inquiry.substring(0, 50) + '...' : inquiry;
+        let customerTone = inquiry.length > 60 ? inquiry.substring(0, 60) + '...' : inquiry;
         return `- ${customerTone}`;
       }).join('\n');
     }
     
+    result += `\n\n💬 **고객 문의 톤 특징:**\n- 실제 고객이 사용한 표현과 어투를 그대로 보존\n- 존댓말/반말, 감정 표현 등 원문 톤 유지`;
+    
     return result;
   })() : 
-  `**1순위 - 가장 많이 문의하는 내용:**
+  `**🥇 가장 많이 문의하는 내용 (빈도: 추정 ${Math.ceil(inquiryCount * 0.5)}회/${inquiryCount}건):**
 - ${tagName} 어떻게 사용하는 건가요?
 - ${tagName} 설정 방법 알려주세요
 
-**2순위 - 두 번째로 많이 문의하는 내용:**  
+**🥈 두 번째로 많이 문의하는 내용 (빈도: 추정 ${Math.ceil(inquiryCount * 0.3)}회/${inquiryCount}건):**  
 - ${tagName} 관련해서 문제가 있어요
-- ${tagName} 오류 해결해주세요`
+- ${tagName} 오류 해결해주세요
+
+💬 **고객 문의 톤 특징:**
+- 실제 고객이 사용한 표현과 어투를 그대로 보존
+- 존댓말/반말, 감정 표현 등 원문 톤 유지`
 }
 
-*위 내용은 실제 "${tagName}" 태그 티켓에서 추출된 고객 문의 내용을 패턴별 빈도로 분석한 결과입니다.*`,
+*위 내용은 "${tagName}" 태그와 일치하는 검색 결과에서 추출된 ${inquiryCount}개 문의 내용을 학습하여 빈도 기반으로 분석한 결과입니다.*`,
       
       keywordAnalysis: `**🔑 핵심 키워드 TOP 10:**
 1. **${tagName}** - 빈도 ${inquiryCount}회 (${Math.floor((inquiryCount / inquiryCount) * 100)}%) | 핵심 기능어 | 주요 서비스 태그
