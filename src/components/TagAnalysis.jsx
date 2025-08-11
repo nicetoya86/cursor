@@ -16,20 +16,30 @@ const TagAnalysis = ({ tagAnalysisData, isLoading }) => {
     );
   }
 
-  if (!tagAnalysisData || !tagAnalysisData.tagAnalysis || Object.keys(tagAnalysisData.tagAnalysis).length === 0) {
+  console.log('🔍 TagAnalysis 데이터 확인:', tagAnalysisData);
+
+  // 데이터 구조 확인 및 안전한 접근
+  const results = tagAnalysisData?.results || {};
+  const summary = tagAnalysisData?.summary || {};
+
+  if (!tagAnalysisData || !results || Object.keys(results).length === 0) {
     return (
       <div className="tag-analysis-container">
         <div className="no-data">
           <h3>🏷️ 태그별 분석</h3>
           <p>분석할 태그별 문의 내용이 없습니다.</p>
-          <small>최소 3개 이상의 문의가 있는 태그만 분석됩니다.</small>
+          <small>선택한 태그에 해당하는 티켓이 없거나 분석에 실패했습니다.</small>
+          {tagAnalysisData?.error && (
+            <div className="error-message">
+              <strong>오류:</strong> {tagAnalysisData.error}
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  const tagEntries = Object.entries(tagAnalysisData.tagAnalysis);
-  const summary = tagAnalysisData.summary;
+  const tagEntries = Object.entries(results);
 
   return (
     <div className="tag-analysis-container">
@@ -59,24 +69,21 @@ const TagAnalysis = ({ tagAnalysisData, isLoading }) => {
                 className={`tag-button ${selectedTag === tag ? 'active' : ''}`}
                 onClick={() => setSelectedTag(tag)}
               >
-                <span className="tag-name">{data.tagName}</span>
-                <span className="tag-count">({data.inquiryCount}건)</span>
+                <span className="tag-name">{tag}</span>
+                <span className="tag-count">({data.totalInquiries || 0}건)</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* 선택된 태그의 상세 분석 */}
-        {selectedTag && tagAnalysisData.tagAnalysis[selectedTag] && (
+        {selectedTag && results[selectedTag] && (
           <div className="tag-detail">
             <div className="tag-detail-header">
               <h4>
-                {tagAnalysisData.tagAnalysis[selectedTag].tagName} 태그 분석
+                {selectedTag} 태그 분석
                 <span className="inquiry-count">
-                  ({tagAnalysisData.tagAnalysis[selectedTag].inquiryCount}건 문의
-                  {tagAnalysisData.tagAnalysis[selectedTag].ticketCount && 
-                    ` / ${tagAnalysisData.tagAnalysis[selectedTag].ticketCount}개 티켓`
-                  })
+                  ({results[selectedTag].totalInquiries || 0}건 문의)
                 </span>
               </h4>
               
@@ -100,7 +107,7 @@ const TagAnalysis = ({ tagAnalysisData, isLoading }) => {
               {activeTab === 'natural' && (
                 <div className="natural-analysis">
                   <div className="analysis-content">
-                    {tagAnalysisData.tagAnalysis[selectedTag].naturalLanguageAnalysis
+                    {(results[selectedTag].naturalLanguageAnalysis || '분석 결과가 없습니다.')
                       .split('\n')
                       .map((line, index) => {
                         // 빈 줄 처리
@@ -149,61 +156,20 @@ const TagAnalysis = ({ tagAnalysisData, isLoading }) => {
               {activeTab === 'keyword' && (
                 <div className="keyword-analysis">
                   <div className="keyword-content">
-                    {tagAnalysisData.tagAnalysis[selectedTag].keywordAnalysis
-                      .split('\n')
-                      .filter(line => line.trim())
-                      .map((line, index) => {
-                        // 이모지가 포함된 섹션 헤더 처리
-                        if (line.includes('🔑') || line.includes('📈')) {
-                          return (
-                            <div key={index} className="keyword-section-header">
-                              {line}
-                            </div>
-                          );
-                        }
-                        
-                        // 키워드 리스트 아이템 처리 (번호가 있는 경우)
-                        if (line.match(/^\d+\.\s\*\*.*\*\*/)) {
-                          const parts = line.split(' | ');
-                          const keywordPart = parts[0]; // "1. **키워드** - 빈도 X회 (X%)"
-                          const category = parts[1] || ''; // 분류
-                          const description = parts[2] || ''; // 설명
-                          
-                          return (
-                            <div key={index} className="keyword-list-item">
-                              <div className="keyword-main">
-                                {keywordPart}
-                              </div>
-                              {category && (
-                                <div className="keyword-category">
-                                  <span className="category-badge">{category}</span>
-                                </div>
-                              )}
-                              {description && (
-                                <div className="keyword-description">
-                                  {description}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        }
-                        
-                        // 일반 리스트 아이템
-                        if (line.startsWith('- ')) {
-                          return (
-                            <div key={index} className="keyword-trend-item">
-                              {line}
-                            </div>
-                          );
-                        }
-                        
-                        // 일반 텍스트
-                        return (
-                          <div key={index} className="keyword-text">
-                            {line}
-                          </div>
-                        );
-                      })}
+                    {Array.isArray(results[selectedTag].keywordAnalysis) ? (
+                      results[selectedTag].keywordAnalysis.map((keyword, index) => (
+                        <div key={index} className="keyword-item">
+                          <span className="keyword-text">{keyword.keyword}</span>
+                          <span className="keyword-frequency">빈도: {keyword.frequency}</span>
+                          <span className={`keyword-importance ${keyword.importance}`}>
+                            {keyword.importance === 'high' ? '높음' : 
+                             keyword.importance === 'medium' ? '보통' : '낮음'}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div>키워드 분석 결과가 없습니다.</div>
+                    )}
                   </div>
                 </div>
               )}
@@ -211,9 +177,12 @@ const TagAnalysis = ({ tagAnalysisData, isLoading }) => {
 
             <div className="analysis-meta">
               <small>
-                분석 완료: {new Date(tagAnalysisData.tagAnalysis[selectedTag].processedAt).toLocaleString()}
-                {tagAnalysisData.tagAnalysis[selectedTag].error && (
-                  <span className="error-info"> | 오류: {tagAnalysisData.tagAnalysis[selectedTag].error}</span>
+                분석 완료: {new Date().toLocaleString()}
+                {results[selectedTag].error && (
+                  <span className="error-info"> | 오류: {results[selectedTag].error}</span>
+                )}
+                {summary.isMock && (
+                  <span className="mock-info"> | 모의 분석 모드</span>
                 )}
               </small>
             </div>
