@@ -6,6 +6,12 @@ let openai = null;
 const initializeOpenAI = () => {
   const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
   
+  console.log('🔑 API 키 확인:', {
+    hasApiKey: !!apiKey,
+    apiKeyLength: apiKey ? apiKey.length : 0,
+    apiKeyStart: apiKey ? apiKey.substring(0, 7) + '...' : 'none'
+  });
+  
   if (!apiKey || apiKey.trim() === '' || apiKey === 'your-api-key-here') {
     console.log('ℹ️ OpenAI API 키가 설정되지 않았습니다. 모의 분석 모드를 사용합니다.');
     return false;
@@ -189,15 +195,46 @@ export const analyzeTicketsWithGPT = async (tickets) => {
   };
 };
 
-// API 키 검증
+// API 키 검증 (실제 API 테스트 포함)
 export const validateOpenAIKey = async () => {
+  console.log('🔐 API 키 검증 시작...');
+  
   const initialized = initializeOpenAI();
   
   if (!initialized) {
-    throw new Error('OpenAI 클라이언트 초기화에 실패했습니다.');
+    console.log('❌ OpenAI 클라이언트 초기화 실패');
+    throw new Error('OpenAI API 키가 설정되지 않았거나 올바르지 않습니다.');
   }
   
-  return true;
+  // 실제 API 호출로 키 유효성 테스트
+  try {
+    console.log('🧪 API 키 유효성 테스트 중...');
+    const testResponse = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{ role: "user", content: "test" }],
+      max_tokens: 1
+    });
+    
+    console.log('✅ API 키 검증 성공');
+    return true;
+  } catch (error) {
+    console.error('❌ API 키 검증 실패:', error);
+    console.error('❌ 오류 상세:', {
+      status: error.status,
+      message: error.message,
+      type: error.type
+    });
+    
+    if (error.status === 401) {
+      throw new Error('OpenAI API 키가 유효하지 않습니다. API 키를 확인해주세요.');
+    } else if (error.status === 429) {
+      throw new Error('OpenAI API 사용량 한도를 초과했습니다.');
+    } else if (error.status === 403) {
+      throw new Error('OpenAI API 접근 권한이 없습니다.');
+    } else {
+      throw new Error(`OpenAI API 오류: ${error.message}`);
+    }
+  }
 };
 
 // API 키 검증 (별칭)
