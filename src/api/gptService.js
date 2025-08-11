@@ -200,6 +200,9 @@ export const validateOpenAIKey = async () => {
   return true;
 };
 
+// API 키 검증 (별칭)
+export const validateApiKey = validateOpenAIKey;
+
 // 개발용 모의 분석 (API 키가 없을 때 사용)
 export const mockAnalyzeTickets = async (tickets) => {
   const results = [];
