@@ -126,14 +126,29 @@ function App() {
       console.log('🏷️ 선택된 태그별 분석 시작...', selectedTagsList.length, '개 태그');
       
       let result;
-      // API 키 없이 바로 모의 분석 사용 (401 오류 방지)
-      console.log('🔄 모의 분석 모드 사용...');
       try {
-        result = await mockAnalyzeSelectedTags(allTickets, selectedTagsList);
-        console.log('✅ 모의 선택된 태그별 분석 완료:', result);
-      } catch (mockError) {
-        console.error('❌ 모의 분석 실패:', mockError);
-        throw new Error(`모의 분석 실패: ${mockError.message}`);
+        // API 키 검증 후 실제 GPT 분석 시도
+        console.log('🔐 API 키 검증 시도...');
+        await validateApiKey();
+        console.log('✅ API 키 검증 성공, 실제 GPT 분석 진행...');
+        result = await analyzeSelectedTags(allTickets, selectedTagsList);
+        console.log('✅ 실제 선택된 태그별 분석 완료:', result);
+      } catch (apiError) {
+        console.log('⚠️ API 오류 발생:', apiError.message);
+        console.log('🔄 모의 분석 모드로 전환...');
+        
+        // 사용자에게 알림
+        if (apiError.message.includes('API 키가 유효하지 않습니다')) {
+          console.log('💡 API 키 문제로 모의 분석 모드 사용');
+        }
+        
+        try {
+          result = await mockAnalyzeSelectedTags(allTickets, selectedTagsList);
+          console.log('✅ 모의 선택된 태그별 분석 완료:', result);
+        } catch (mockError) {
+          console.error('❌ 모의 분석도 실패:', mockError);
+          throw new Error(`분석 실패: ${mockError.message}`);
+        }
       }
       
       setTagAnalysisData(result);
