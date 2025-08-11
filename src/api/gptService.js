@@ -555,13 +555,50 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
       console.log(`🔍 ${tagName} 태그 분석 중...`);
 
       // 해당 태그를 가진 모든 티켓들 찾기 (검색 결과와 일치)
-      const taggedTickets = tickets.filter(ticket => 
-        ticket.tags && Array.isArray(ticket.tags) && 
-        ticket.tags.includes(originalTagName)
-      );
+      console.log(`🔍 전체 티켓 수: ${tickets.length}개`);
+      console.log(`🎯 찾을 태그: "${originalTagName}"`);
+      
+      // 더 강력한 태그 매칭 로직
+      const taggedTickets = tickets.filter(ticket => {
+        if (!ticket.tags || !Array.isArray(ticket.tags)) {
+          return false;
+        }
+        
+        // 정확한 매칭 시도
+        const hasExactMatch = ticket.tags.includes(originalTagName);
+        
+        // 부분 매칭도 시도 (고객_ 접두사 제거)
+        const tagWithoutPrefix = originalTagName.replace('고객_', '');
+        const hasPartialMatch = ticket.tags.some(tag => 
+          tag.includes(tagWithoutPrefix) || 
+          tag.replace('고객_', '') === tagWithoutPrefix
+        );
+        
+        const isMatched = hasExactMatch || hasPartialMatch;
+        
+        if (isMatched) {
+          console.log(`✅ 매칭된 티켓 ${ticket.id}:`, {
+            ticketTags: ticket.tags,
+            targetTag: originalTagName,
+            exactMatch: hasExactMatch,
+            partialMatch: hasPartialMatch
+          });
+        }
+        
+        return isMatched;
+      });
+
+      console.log(`📊 태그 매칭 결과: ${taggedTickets.length}개 티켓 발견`);
 
       if (taggedTickets.length === 0) {
         console.log(`⚠️ ${tagName} 태그에 해당하는 티켓이 없습니다.`);
+        
+        // 디버깅을 위해 모든 티켓의 태그 출력
+        console.log(`🔍 전체 티켓의 태그 샘플 (처음 5개):`);
+        tickets.slice(0, 5).forEach((ticket, index) => {
+          console.log(`티켓 ${index + 1} (ID: ${ticket.id}):`, ticket.tags);
+        });
+        
         continue;
       }
 
@@ -781,13 +818,44 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
           }
         }
         
-        // 최종적으로 문의 내용이 있는 경우만 추가
-        if (ticketInquiry && ticketInquiry.trim().length > 10) {
+        // 최종적으로 문의 내용이 있는 경우만 추가 (기준 완화)
+        if (ticketInquiry && ticketInquiry.trim().length > 5) {
           inquiries.push(ticketInquiry.trim());
           inquiryCount++;
           console.log(`📝 문의 내용 추가됨 (${inquiryCount}번째): ${ticketInquiry.substring(0, 50)}...`);
         } else {
           console.log(`⚠️ 티켓 ${ticket.id}: 유효한 문의 내용 없음`);
+          
+          // 문의 내용이 없을 때 더 적극적으로 추출 시도
+          let fallbackContent = '';
+          
+          // 제목에서라도 내용 추출
+          if (ticket.subject && !ticket.subject.includes('님과의 대화')) {
+            fallbackContent = ticket.subject;
+          }
+          
+          // 설명에서라도 내용 추출
+          if (!fallbackContent && ticket.description) {
+            fallbackContent = ticket.description.substring(0, 100);
+          }
+          
+          // 댓글에서라도 내용 추출
+          if (!fallbackContent && ticket.comments && ticket.comments.length > 0) {
+            for (const comment of ticket.comments) {
+              if (comment.body && comment.body.length > 10) {
+                fallbackContent = comment.body.substring(0, 100);
+                break;
+              }
+            }
+          }
+          
+          if (fallbackContent && fallbackContent.trim().length > 5) {
+            inquiries.push(fallbackContent.trim());
+            inquiryCount++;
+            console.log(`📝 대체 내용 추가됨 (${inquiryCount}번째): ${fallbackContent.substring(0, 50)}...`);
+          } else {
+            console.log(`❌ 티켓 ${ticket.id}: 어떤 내용도 추출할 수 없음`);
+          }
         }
       }
 
@@ -1036,10 +1104,28 @@ export const mockAnalyzeSelectedTags = async (tickets, selectedTags) => {
     await new Promise(resolve => setTimeout(resolve, 200));
     
     // 해당 태그를 가진 모든 티켓들 찾기 (검색 결과와 일치)
-    const taggedTickets = tickets.filter(ticket => 
-      ticket.tags && Array.isArray(ticket.tags) && 
-      ticket.tags.includes(originalTagName)
-    );
+    console.log(`🔍 [모의] 전체 티켓 수: ${tickets.length}개`);
+    console.log(`🎯 [모의] 찾을 태그: "${originalTagName}"`);
+    
+    const taggedTickets = tickets.filter(ticket => {
+      if (!ticket.tags || !Array.isArray(ticket.tags)) {
+        return false;
+      }
+      
+      // 정확한 매칭 시도
+      const hasExactMatch = ticket.tags.includes(originalTagName);
+      
+      // 부분 매칭도 시도 (고객_ 접두사 제거)
+      const tagWithoutPrefix = originalTagName.replace('고객_', '');
+      const hasPartialMatch = ticket.tags.some(tag => 
+        tag.includes(tagWithoutPrefix) || 
+        tag.replace('고객_', '') === tagWithoutPrefix
+      );
+      
+      return hasExactMatch || hasPartialMatch;
+    });
+    
+    console.log(`📊 [모의] 태그 매칭 결과: ${taggedTickets.length}개 티켓 발견`);
 
     if (taggedTickets.length === 0) {
       console.log(`⚠️ ${tagName} 태그에 해당하는 티켓이 없습니다.`);
