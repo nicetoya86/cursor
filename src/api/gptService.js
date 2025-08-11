@@ -570,15 +570,18 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
       let inquiryCount = 0;
       
       console.log(`🔍 ${tagName} 태그: ${taggedTickets.length}개 티켓에서 실제 문의 내용 수집 중...`);
+      console.log(`🎯 선택된 태그 정보:`, { tagName, originalTagName });
       
       for (const ticket of taggedTickets) {
         console.log(`📋 티켓 ${ticket.id} 분석 중...`);
+        console.log(`🏷️ 티켓 태그:`, ticket.tags);
         
         let ticketInquiry = '';
         
         // 1순위: GPT 분석 결과가 있으면 사용 (이미 필터링된 고객 문의 내용)
         if (ticket.gptAnalysis && ticket.gptAnalysis.extractedInquiry) {
           const inquiry = ticket.gptAnalysis.extractedInquiry;
+          console.log(`🤖 GPT 분석 결과 확인: "${inquiry}"`);
           if (inquiry && 
               !inquiry.includes('구체적인 문의 내용 없음') && 
               !inquiry.includes('분석 실패') &&
@@ -588,6 +591,8 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
           } else {
             console.log(`⚠️ GPT 분석 결과 제외: ${inquiry}`);
           }
+        } else {
+          console.log(`⚠️ GPT 분석 결과 없음`);
         }
         
         // 2순위: GPT 분석 결과가 없거나 부족하면 원본에서 직접 추출
@@ -691,28 +696,85 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
             }
           }
           
-          // 4순위: 전체 티켓 내용에서 패턴 검색 (더 넓은 범위)
+          // 4순위: TicketList와 동일한 getUserComments 로직 사용
           if (!ticketInquiry || ticketInquiry.length < 10) {
-            // 티켓 전체 내용을 문자열로 변환하여 검색
-            const fullTicketContent = JSON.stringify(ticket);
-            const patterns = [
-              /고객\s*문의\s*내용:\s*([^"]+)/gi,
-              /문의\s*내용:\s*([^"]+)/gi,
-              /고객\s*:\s*([^"]+)/gi
-            ];
+            console.log(`🔄 TicketList 방식으로 문의 내용 추출 시도...`);
             
-            for (const pattern of patterns) {
-              const matches = [...fullTicketContent.matchAll(pattern)];
-              if (matches.length > 0) {
-                const bestMatch = matches
-                  .map(match => match[1].trim())
-                  .filter(content => content.length > 15 && !content.includes('null') && !content.includes('undefined'))
-                  .sort((a, b) => b.length - a.length)[0]; // 가장 긴 내용 선택
+            // 모든 comment를 수집 (중첩 구조 고려) - TicketList.jsx와 동일한 로직
+            let allComments = [];
+            
+            const findComments = (obj) => {
+              if (!obj) return;
+              
+              if (Array.isArray(obj)) {
+                obj.forEach(item => findComments(item));
+              } else if (typeof obj === 'object') {
+                // comments 배열이 있으면 추가
+                if (obj.comments && Array.isArray(obj.comments)) {
+                  allComments = allComments.concat(obj.comments);
+                  // 중첩된 comments도 재귀 처리
+                  obj.comments.forEach(comment => findComments(comment));
+                }
                 
-                if (bestMatch) {
-                  ticketInquiry = bestMatch;
-                  console.log(`✅ 패턴 검색으로 문의 내용 발견: ${ticketInquiry.substring(0, 50)}...`);
-                  break;
+                // 단일 comment 객체인 경우 (author_id 체크 추가)
+                if ((obj.body || obj.plain_body) && obj.hasOwnProperty('author_id')) {
+                  allComments.push(obj);
+                }
+                
+                // 다른 속성들도 재귀 검사
+                Object.values(obj).forEach(value => {
+                  if (typeof value === 'object') {
+                    findComments(value);
+                  }
+                });
+              }
+            };
+            
+            // ticket 전체에서 comments 찾기
+            findComments(ticket);
+            
+            console.log(`📝 발견된 댓글 수: ${allComments.length}개`);
+            
+            // 모든 body 내용을 수집
+            let allContent = '';
+            allComments.forEach(comment => {
+              if (comment.body) {
+                allContent += comment.body + ' ';
+              }
+              if (comment.plain_body && comment.plain_body !== comment.body) {
+                allContent += comment.plain_body + ' ';
+              }
+            });
+            
+            // description과 subject도 확인
+            if (ticket.description) {
+              allContent += ticket.description + ' ';
+            }
+            if (ticket.subject && !ticket.subject.includes('님과의 대화')) {
+              allContent += ticket.subject + ' ';
+            }
+            
+            allContent = allContent.trim();
+            console.log(`📄 전체 내용 길이: ${allContent.length}자`);
+            
+            if (allContent) {
+              // 1순위: "고객 문의 내용:" 패턴 찾기
+              const customerInquiryMatch = allContent.match(/고객\s*문의\s*내용:\s*(.+?)(?=\n|$)/s);
+              if (customerInquiryMatch && customerInquiryMatch[1].trim().length > 2) {
+                ticketInquiry = customerInquiryMatch[1].trim();
+                console.log(`✅ "고객 문의 내용:" 패턴으로 추출: ${ticketInquiry.substring(0, 50)}...`);
+              } else {
+                // 2순위: 전체 내용에서 매니저/BOT 내용 제외하고 추출
+                const cleanedContent = allContent
+                  .replace(/여신BOT|매니저L|매니저B|매니저D|Matrix_bot|Caller|상담원|직원|관리자|운영자/g, '')
+                  .replace(/문의해주셔서\s*감사합니다|확인해드리겠습니다|도움이\s*되셨나요|처리해드리겠습니다/g, '')
+                  .replace(/해결되었어요|해결되지\s*않았어요|더\s*궁금해요|매니져연결|매니자연결/g, '')
+                  .replace(/빠른\s*시일\s*내|답변\s*드리겠습니다|처리해드리겠습니다|확인\s*후\s*연락/g, '')
+                  .trim();
+                
+                if (cleanedContent.length > 15) {
+                  ticketInquiry = cleanedContent.substring(0, 200); // 최대 200자까지
+                  console.log(`✅ 정제된 내용으로 추출: ${ticketInquiry.substring(0, 50)}...`);
                 }
               }
             }
@@ -731,6 +793,44 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
 
       if (inquiries.length === 0) {
         console.log(`⚠️ ${tagName} 태그에서 분석할 문의 내용을 찾을 수 없습니다.`);
+        console.log(`🔍 디버깅 정보:`);
+        console.log(`- 태그가 일치하는 티켓 수: ${taggedTickets.length}개`);
+        console.log(`- 선택된 태그: ${originalTagName}`);
+        console.log(`- 첫 번째 티켓 예시:`, taggedTickets[0] ? {
+          id: taggedTickets[0].id,
+          subject: taggedTickets[0].subject,
+          tags: taggedTickets[0].tags,
+          hasGptAnalysis: !!taggedTickets[0].gptAnalysis,
+          hasComments: !!(taggedTickets[0].comments && taggedTickets[0].comments.length > 0),
+          hasDescription: !!taggedTickets[0].description
+        } : '없음');
+        
+        // 문의 내용이 없어도 결과에 포함하여 사용자에게 알림
+        results[originalTagName] = {
+          tagName: tagName,
+          originalTagName: originalTagName,
+          inquiryCount: 0,
+          ticketCount: taggedTickets.length,
+          naturalLanguageAnalysis: `**"${tagName}" 태그 분석 결과:**
+
+⚠️ **문의 내용 수집 실패**
+
+📊 **상세 정보:**
+- 태그가 일치하는 티켓: ${taggedTickets.length}개 발견
+- 추출된 문의 내용: 0개
+
+🔍 **가능한 원인:**
+1. 해당 태그의 티켓들이 아직 GPT 분석을 거치지 않았음
+2. 티켓 내용이 매니저/BOT 메시지만 포함하고 실제 고객 문의가 없음
+3. 문의 내용이 시스템에서 인식할 수 있는 형태로 저장되지 않았음
+
+💡 **해결 방법:**
+1. 먼저 "🚀 분석하기" 버튼으로 전체 티켓을 GPT 분석한 후 태그별 분석을 시도해보세요
+2. 검색 결과에서 해당 태그의 문의 내용을 직접 확인해보세요`,
+          keywordAnalysis: `**분석 불가:** 추출된 문의 내용이 없어 키워드 분석을 수행할 수 없습니다.`,
+          processedAt: new Date().toISOString(),
+          error: '문의 내용 추출 실패'
+        };
         continue;
       }
 
