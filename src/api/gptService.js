@@ -273,24 +273,43 @@ export const mockAnalyzeTickets = async (tickets) => {
 
 // 선택된 태그별 문의 내용 분석 (완전히 새로운 버전)
 export const analyzeSelectedTags = async (tickets, selectedTags) => {
+  console.log('🚀 analyzeSelectedTags 함수 시작:', {
+    ticketsCount: tickets?.length || 0,
+    selectedTagsCount: selectedTags?.length || 0
+  });
+
   try {
+    // 입력 검증
+    if (!tickets || !Array.isArray(tickets)) {
+      throw new Error('유효하지 않은 티켓 데이터입니다.');
+    }
+    
+    if (!selectedTags || !Array.isArray(selectedTags) || selectedTags.length === 0) {
+      throw new Error('선택된 태그가 없습니다.');
+    }
+
     // OpenAI 클라이언트 초기화 확인
     if (!openai) {
+      console.log('🔧 OpenAI 클라이언트 초기화 시도...');
       const initialized = initializeOpenAI();
       if (!initialized) {
         throw new Error('OpenAI API 키가 설정되지 않았거나 올바르지 않습니다.');
       }
+      console.log('✅ OpenAI 클라이언트 초기화 완료');
     }
 
     const results = {};
     let totalInquiries = 0;
 
+    console.log(`📋 ${selectedTags.length}개 태그 분석 시작...`);
+
     // 각 선택된 태그별로 분석 수행
-    for (const selectedTag of selectedTags) {
+    for (let i = 0; i < selectedTags.length; i++) {
+      const selectedTag = selectedTags[i];
       const tagName = selectedTag.displayName;
       const originalTagName = selectedTag.originalName;
       
-      console.log(`🔍 "${tagName}" 태그 분석 시작...`);
+      console.log(`🔍 [${i + 1}/${selectedTags.length}] "${tagName}" 태그 분석 시작...`);
 
       // 1단계: 검색 결과에서 동일한 태그를 가진 티켓들 찾기
       console.log(`📊 전체 티켓 수: ${tickets.length}개`);
@@ -310,19 +329,20 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
           tag.replace('고객_', '') === tagWithoutPrefix
         );
         
-        const isMatched = hasExactMatch || hasPartialMatch;
-        
-        if (isMatched) {
-          console.log(`✅ 매칭된 티켓 ${ticket.id}`);
-        }
-        
-        return isMatched;
+        return hasExactMatch || hasPartialMatch;
       });
 
       console.log(`✅ 매칭된 티켓: ${matchedTickets.length}개`);
 
       if (matchedTickets.length === 0) {
         console.log(`⚠️ "${tagName}" 태그에 해당하는 티켓이 없습니다.`);
+        // 빈 결과라도 추가하여 사용자에게 알림
+        results[tagName] = {
+          naturalLanguageAnalysis: `**"${tagName}" 태그 분석 결과**\n\n⚠️ 해당 태그를 가진 티켓이 없습니다.`,
+          keywordAnalysis: [],
+          totalInquiries: 0,
+          analyzedTags: 0
+        };
         continue;
       }
 
@@ -393,7 +413,8 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
       // 3단계: 수집한 문의 내용에서 자주 물어보는 내용 분석
       console.log(`🤖 "${tagName}" 태그의 자주 문의하는 내용 분석 시작...`);
 
-      const analysisPrompt = `
+      try {
+        const analysisPrompt = `
 다음은 "${tagName}" 태그와 관련된 실제 고객 문의 내용들입니다.
 
 **분석 목표:** 이 문의 내용들을 분석해서 자주 물어보는 내용이 무엇인지 찾아주세요.
@@ -424,40 +445,78 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
 ${inquiryContents.map((content, index) => `${index + 1}. ${content}`).join('\n\n')}
 `;
 
-      // OpenAI API 호출
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system", 
-            content: "당신은 고객 서비스 분석 전문가입니다. 고객 문의 내용을 분석하여 자주 문의하는 패턴을 찾아주세요."
-          },
-          {
-            role: "user", 
-            content: analysisPrompt
-          }
-        ],
-        max_tokens: 1500,
-        temperature: 0.3
-      });
+        console.log(`📤 OpenAI API 호출 시작...`);
+        console.log(`📊 분석할 문의 내용 수: ${inquiryContents.length}건`);
+        console.log(`📝 프롬프트 길이: ${analysisPrompt.length}자`);
 
-      const analysisResult = response.choices[0].message.content;
-      
-      console.log(`✅ "${tagName}" 분석 완료`);
-      console.log(`📄 분석 결과:`, analysisResult.substring(0, 100) + '...');
+        // OpenAI API 호출
+        const response = await openai.chat.completions.create({
+          model: "gpt-4",
+          messages: [
+            {
+              role: "system", 
+              content: "당신은 고객 서비스 분석 전문가입니다. 고객 문의 내용을 분석하여 자주 문의하는 패턴을 찾아주세요."
+            },
+            {
+              role: "user", 
+              content: analysisPrompt
+            }
+          ],
+          max_tokens: 1500,
+          temperature: 0.3
+        });
 
-      // 결과 저장
-      results[tagName] = {
-        naturalLanguageAnalysis: analysisResult,
-        keywordAnalysis: [
-          {keyword: tagName.replace('_', ' '), frequency: inquiryContents.length, importance: 'high'}
-        ],
-        totalInquiries: inquiryContents.length,
-        analyzedTags: 1
-      };
+        console.log(`📥 OpenAI API 응답 받음`);
+
+        if (!response || !response.choices || !response.choices[0] || !response.choices[0].message) {
+          throw new Error('OpenAI API 응답이 올바르지 않습니다.');
+        }
+
+        const analysisResult = response.choices[0].message.content;
+        
+        if (!analysisResult || analysisResult.trim() === '') {
+          throw new Error('OpenAI API에서 빈 응답을 받았습니다.');
+        }
+        
+        console.log(`✅ "${tagName}" 분석 완료`);
+        console.log(`📄 분석 결과 길이: ${analysisResult.length}자`);
+        console.log(`📄 분석 결과 미리보기:`, analysisResult.substring(0, 100) + '...');
+
+        // 결과 저장
+        results[tagName] = {
+          naturalLanguageAnalysis: analysisResult,
+          keywordAnalysis: [
+            {keyword: tagName.replace('_', ' '), frequency: inquiryContents.length, importance: 'high'}
+          ],
+          totalInquiries: inquiryContents.length,
+          analyzedTags: 1
+        };
+
+      } catch (apiError) {
+        console.error(`❌ "${tagName}" OpenAI API 호출 실패:`, apiError);
+        
+        // API 호출 실패시 대체 결과 제공
+        results[tagName] = {
+          naturalLanguageAnalysis: `**"${tagName}" 태그 분석 결과**\n\n❌ **API 분석 실패**\n\n오류: ${apiError.message}\n\n수집된 문의 내용 (${inquiryContents.length}건):\n${inquiryContents.slice(0, 3).map((content, index) => `${index + 1}. ${content.substring(0, 100)}...`).join('\n')}`,
+          keywordAnalysis: [
+            {keyword: tagName.replace('_', ' '), frequency: inquiryContents.length, importance: 'high'}
+          ],
+          totalInquiries: inquiryContents.length,
+          analyzedTags: 0,
+          error: apiError.message
+        };
+      }
     }
 
-    return {
+    console.log('🎉 전체 분석 완료!');
+    console.log(`📊 최종 결과:`, {
+      totalTags: selectedTags.length,
+      totalInquiries,
+      analyzedTags: Object.keys(results).length,
+      successfulTags: Object.values(results).filter(r => !r.error).length
+    });
+
+    const finalResult = {
       success: true,
       results,
       summary: {
@@ -468,19 +527,27 @@ ${inquiryContents.map((content, index) => `${index + 1}. ${content}`).join('\n\n
       isMock: false
     };
 
+    console.log('✅ analyzeSelectedTags 함수 완료, 결과 반환');
+    return finalResult;
+
   } catch (error) {
-    console.error('태그별 분석 오류:', error);
-    return {
+    console.error('❌ 태그별 분석 치명적 오류:', error);
+    console.error('❌ 오류 스택:', error.stack);
+    
+    const errorResult = {
       success: false,
       error: error.message,
       results: {},
       summary: {
-        totalTags: 0,
+        totalTags: selectedTags?.length || 0,
         totalInquiries: 0,
         analyzedTags: 0
       },
       isMock: false
-    }
+    };
+
+    console.log('❌ analyzeSelectedTags 함수 오류로 종료, 오류 결과 반환');
+    return errorResult;
   }
 };
 

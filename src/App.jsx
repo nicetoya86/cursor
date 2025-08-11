@@ -128,7 +128,7 @@ function App() {
       let result;
       try {
         // API 키 검증
-        validateApiKey();
+        await validateApiKey();
         result = await analyzeSelectedTags(allTickets, selectedTagsList);
         console.log('✅ 실제 선택된 태그별 분석 완료:', result);
       } catch (apiError) {
