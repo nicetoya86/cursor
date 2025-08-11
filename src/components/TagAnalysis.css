@@ -1,0 +1,424 @@
+.tag-analysis-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin: 20px 0;
+  overflow: hidden;
+}
+
+.tag-analysis-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+}
+
+.tag-analysis-header h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.analysis-summary {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.summary-item {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.9em;
+  backdrop-filter: blur(10px);
+}
+
+.mock-badge {
+  background: #ff9800;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.tag-analysis-content {
+  padding: 20px;
+}
+
+/* 태그 목록 스타일 */
+.tag-list {
+  margin-bottom: 30px;
+}
+
+.tag-list h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 1.2em;
+}
+
+.tag-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tag-button {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 25px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-button:hover {
+  background: #e9ecef;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tag-button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.tag-name {
+  font-weight: 600;
+}
+
+.tag-count {
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+/* 태그 상세 분석 스타일 */
+.tag-detail {
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.tag-detail-header {
+  background: #f8f9fa;
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.tag-detail-header h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inquiry-count {
+  color: #6c757d;
+  font-size: 0.9em;
+  font-weight: normal;
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.tab-button {
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9em;
+}
+
+.tab-button:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.tab-button.active {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+.tab-content {
+  padding: 25px;
+}
+
+/* 자연어 분석 스타일 */
+.natural-analysis .analysis-content {
+  line-height: 1.6;
+}
+
+.natural-analysis p {
+  margin: 10px 0;
+  color: #333;
+}
+
+/* 개선된 자연어 분석 스타일 */
+.analysis-section-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1.1em;
+  margin: 20px 0 15px 0;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.analysis-header {
+  font-weight: 600;
+  color: #495057;
+  margin: 15px 0 10px 0;
+  font-size: 1.05em;
+  border-left: 4px solid #667eea;
+  padding-left: 12px;
+}
+
+.analysis-list-item {
+  background: #f8f9fa;
+  padding: 10px 16px;
+  margin: 8px 0;
+  border-radius: 6px;
+  border-left: 3px solid #28a745;
+  color: #333;
+  line-height: 1.5;
+}
+
+.analysis-text {
+  margin: 8px 0;
+  color: #495057;
+  line-height: 1.6;
+  padding-left: 4px;
+}
+
+/* 키워드 분석 스타일 */
+.keyword-analysis .keyword-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.keyword-item {
+  background: #f8f9fa;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.95em;
+  line-height: 1.4;
+}
+
+/* 개선된 키워드 분석 스타일 */
+.keyword-section-header {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1.1em;
+  margin: 20px 0 15px 0;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+}
+
+.keyword-list-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 15px;
+  margin: 10px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.keyword-list-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.keyword-main {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  font-size: 1.05em;
+}
+
+.keyword-main strong {
+  color: #667eea;
+}
+
+.keyword-category {
+  margin-bottom: 6px;
+}
+
+.category-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
+.keyword-description {
+  color: #6c757d;
+  font-size: 0.9em;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.keyword-trend-item {
+  background: #e8f5e8;
+  padding: 8px 14px;
+  margin: 6px 0;
+  border-radius: 6px;
+  border-left: 3px solid #28a745;
+  color: #333;
+  line-height: 1.5;
+}
+
+.keyword-text {
+  margin: 8px 0;
+  color: #495057;
+  line-height: 1.6;
+  padding-left: 4px;
+}
+
+.analysis-meta {
+  padding: 15px 25px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  color: #6c757d;
+}
+
+.error-info {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+/* 기본 메시지 스타일 */
+.default-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+}
+
+.default-message p {
+  font-size: 1.1em;
+  margin-bottom: 25px;
+}
+
+.analysis-info {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: left;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.analysis-info h5 {
+  margin: 0 0 15px 0;
+  color: #495057;
+}
+
+.analysis-info ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.analysis-info li {
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+/* 로딩 및 빈 데이터 스타일 */
+.loading-container, .no-data {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.no-data h3 {
+  color: #495057;
+  margin-bottom: 10px;
+}
+
+.no-data p {
+  color: #6c757d;
+  margin-bottom: 5px;
+}
+
+.no-data small {
+  color: #adb5bd;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .analysis-summary {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .tag-buttons {
+    flex-direction: column;
+  }
+  
+  .tag-button {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .tab-buttons {
+    flex-direction: column;
+  }
+  
+  .tag-analysis-content {
+    padding: 15px;
+  }
+  
+  .tab-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tag-analysis-header {
+    padding: 15px;
+  }
+  
+  .tag-analysis-header h3 {
+    font-size: 1.3em;
+  }
+  
+  .summary-item {
+    font-size: 0.8em;
+    padding: 4px 10px;
+  }
+} 

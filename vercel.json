@@ -1,5 +1,5 @@
 {
-  "name": "zendesk-analyzer",
+  "name": "zendesk-ticket",
   "rewrites": [
     {
       "source": "/(.*)",

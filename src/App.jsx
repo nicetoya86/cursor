@@ -4,7 +4,14 @@ import FilterForm from './components/FilterForm';
 import TicketList from './components/TicketList';
 import CsvDownloadButton from './components/CsvDownloadButton';
 import GptAnalyzer from './components/GptAnalyzer';
+import TagAnalysis from './components/TagAnalysis';
+import TagSelector from './components/TagSelector';
 import { useJsonTickets } from './hooks/useJsonTickets';
+import { 
+  analyzeSelectedTags, 
+  mockAnalyzeSelectedTags, 
+  validateApiKey 
+} from './api/gptService';
 import './App.css';
 
 function App() {
@@ -16,6 +23,13 @@ function App() {
   const [showAnalyzedResults, setShowAnalyzedResults] = useState(false);
   const [analysisSummary, setAnalysisSummary] = useState(null);
   const [showFilterAndResults, setShowFilterAndResults] = useState(false);
+  
+  // 태그별 분석 관련 상태
+  const [tagAnalysisData, setTagAnalysisData] = useState(null);
+  const [isTagAnalyzing, setIsTagAnalyzing] = useState(false);
+  const [showTagAnalysis, setShowTagAnalysis] = useState(false);
+  const [showTagSelector, setShowTagSelector] = useState(false);
+  // const [selectedTags, setSelectedTags] = useState([]); // 현재 사용하지 않음
   
   // JSON 티켓 관리 훅 사용 (분석된 티켓 전달)
   const {
@@ -43,6 +57,12 @@ function App() {
     setShowAnalyzedResults(false);
     setAnalysisSummary(null);
     setShowFilterAndResults(false); // 새 데이터 로드 시 필터 영역 숨기기
+    // 태그별 분석 결과도 초기화
+    setTagAnalysisData(null);
+    setShowTagAnalysis(false);
+    setIsTagAnalyzing(false);
+    setShowTagSelector(false);
+    // setSelectedTags([]); // 현재 사용하지 않음
   }, [loadTickets]);
 
   // 분석 시작 핸들러 (분석하기 버튼 클릭 시 호출)
@@ -73,6 +93,66 @@ function App() {
   const toggleAnalysisView = useCallback(() => {
     setShowAnalyzedResults(!showAnalyzedResults);
   }, [showAnalyzedResults]);
+
+  // 태그별 분석 시작 핸들러 (태그 선택기 표시)
+  const handleTagAnalysisStart = useCallback(() => {
+    if (allTickets.length === 0) {
+      alert('먼저 데이터를 업로드해주세요.');
+      return;
+    }
+
+    setShowTagSelector(true);
+    setTagAnalysisData(null);
+    setShowTagAnalysis(false);
+  }, [allTickets]);
+
+  // 태그 선택 핸들러
+  const handleTagSelect = useCallback((tags) => {
+    // setSelectedTags(tags); // 현재 TagSelector 내에서 관리
+    console.log('선택된 태그:', tags);
+  }, []);
+
+  // 선택된 태그별 분석 실행 핸들러
+  const handleSelectedTagAnalysis = useCallback(async (selectedTagsList) => {
+    if (selectedTagsList.length === 0) {
+      alert('분석할 태그를 선택해주세요.');
+      return;
+    }
+
+    setIsTagAnalyzing(true);
+    setShowTagAnalysis(true);
+
+    try {
+      console.log('🏷️ 선택된 태그별 분석 시작...', selectedTagsList.length, '개 태그');
+      
+      let result;
+      try {
+        // API 키 검증
+        validateApiKey();
+        result = await analyzeSelectedTags(allTickets, selectedTagsList);
+        console.log('✅ 실제 선택된 태그별 분석 완료:', result);
+      } catch (apiError) {
+        console.log('⚠️ API 오류, 모의 분석 모드 사용:', apiError.message);
+        result = await mockAnalyzeSelectedTags(allTickets, selectedTagsList);
+        console.log('✅ 모의 선택된 태그별 분석 완료:', result);
+      }
+      
+      setTagAnalysisData(result);
+    } catch (error) {
+      console.error('❌ 선택된 태그별 분석 실패:', error);
+      alert('태그별 분석 중 오류가 발생했습니다: ' + error.message);
+      setShowTagAnalysis(false);
+    } finally {
+      setIsTagAnalyzing(false);
+    }
+  }, [allTickets]);
+
+  // 기존 태그별 분석 실행 핸들러는 새로운 방식으로 대체됨
+
+  // 태그별 분석 결과 토글
+  const toggleTagAnalysisView = useCallback(() => {
+    setShowTagAnalysis(!showTagAnalysis);
+  }, [showTagAnalysis]);
 
   // 에러 핸들러
   const handleError = useCallback((errorMessage) => {
@@ -219,16 +299,45 @@ function App() {
             {/* 분석 결과 토글 */}
             {analyzedTickets.length > 0 && (
               <div style={{ textAlign: 'center', margin: '20px 0' }}>
-                <button 
-                  className="btn btn-primary"
-                  onClick={toggleAnalysisView}
-                  style={{ 
-                    backgroundColor: showAnalyzedResults ? '#28a745' : '#007bff',
-                    borderColor: showAnalyzedResults ? '#28a745' : '#007bff'
-                  }}
-                >
-                  {showAnalyzedResults ? '📊 GPT 분석 결과 보기' : '📋 전체 티켓 보기'}
-                </button>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button 
+                    className="btn btn-primary"
+                    onClick={toggleAnalysisView}
+                    style={{ 
+                      backgroundColor: showAnalyzedResults ? '#28a745' : '#007bff',
+                      borderColor: showAnalyzedResults ? '#28a745' : '#007bff'
+                    }}
+                  >
+                    {showAnalyzedResults ? '📊 GPT 분석 결과 보기' : '📋 전체 티켓 보기'}
+                  </button>
+                  
+                  <button 
+                    className="btn btn-secondary"
+                    onClick={handleTagAnalysisStart}
+                    disabled={isTagAnalyzing}
+                    style={{ 
+                      backgroundColor: '#6f42c1',
+                      borderColor: '#6f42c1',
+                      color: 'white'
+                    }}
+                  >
+                    {isTagAnalyzing ? '🔄 태그별 분석 중...' : '🏷️ 태그별 분석'}
+                  </button>
+                  
+                  {tagAnalysisData && (
+                    <button 
+                      className="btn btn-info"
+                      onClick={toggleTagAnalysisView}
+                      style={{ 
+                        backgroundColor: showTagAnalysis ? '#17a2b8' : '#6c757d',
+                        borderColor: showTagAnalysis ? '#17a2b8' : '#6c757d'
+                      }}
+                    >
+                      {showTagAnalysis ? '📈 태그 분석 숨기기' : '📈 태그 분석 보기'}
+                    </button>
+                  )}
+                </div>
+                
                 {analysisSummary && (
                   <div style={{ 
                     marginTop: '15px', 
@@ -261,6 +370,25 @@ function App() {
             tickets={allTickets}
             onFilter={handleFilter}
             suggestions={suggestions}
+          />
+        )}
+
+        {/* 태그 선택기 */}
+        {showTagSelector && (
+          <TagSelector 
+            tickets={allTickets}
+            suggestions={suggestions}
+            onTagSelect={handleTagSelect}
+            onAnalyze={handleSelectedTagAnalysis}
+            isAnalyzing={isTagAnalyzing}
+          />
+        )}
+
+        {/* 태그별 분석 결과 */}
+        {showTagAnalysis && tagAnalysisData && (
+          <TagAnalysis 
+            tagAnalysisData={tagAnalysisData}
+            isLoading={isTagAnalyzing}
           />
         )}
 
