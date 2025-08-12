@@ -82,8 +82,8 @@ export const analyzeSingleTicket = async (ticket) => {
     }
     
     // 태그 정보 포함
-    const tags = ticket.tags || [];
-    const customerTags = tags.filter(tag => tag.startsWith('고객_'));
+    const tags = ticket && ticket.tags && Array.isArray(ticket.tags) ? ticket.tags : [];
+    const customerTags = tags.filter(tag => tag && typeof tag === 'string' && tag.startsWith('고객_'));
 
     const prompt = createExtractionPrompt(content, customerTags);
     
@@ -149,8 +149,8 @@ export const analyzeTicketsWithGPT = async (tickets) => {
       }
       
       // 고객 태그가 없는 티켓 제외 (선택적)
-        const customerTags = ticket.tags && Array.isArray(ticket.tags) 
-          ? ticket.tags.filter(tag => tag && tag.startsWith('고객_'))
+        const customerTags = ticket && ticket.tags && Array.isArray(ticket.tags) 
+          ? ticket.tags.filter(tag => tag && typeof tag === 'string' && tag.startsWith('고객_'))
           : [];
         if (customerTags.length === 0) return true;
         
@@ -252,8 +252,8 @@ export const mockAnalyzeTickets = async (tickets) => {
         return true;
       }
       
-      const customerTags = ticket.tags && Array.isArray(ticket.tags) 
-        ? ticket.tags.filter(tag => tag && tag.startsWith('고객_'))
+      const customerTags = ticket && ticket.tags && Array.isArray(ticket.tags) 
+        ? ticket.tags.filter(tag => tag && typeof tag === 'string' && tag.startsWith('고객_'))
         : [];
       if (customerTags.length === 0) return true;
       
@@ -343,6 +343,11 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
     // 각 선택된 태그별로 분석 수행
     for (let i = 0; i < selectedTags.length; i++) {
       const selectedTag = selectedTags[i];
+      if (!selectedTag || !selectedTag.displayName || !selectedTag.originalName) {
+        console.log(`⚠️ 잘못된 태그 데이터: ${JSON.stringify(selectedTag)}`);
+        continue;
+      }
+      
       const tagName = selectedTag.displayName;
       const originalTagName = selectedTag.originalName;
       
@@ -353,7 +358,7 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
       console.log(`🎯 찾을 태그: "${originalTagName}"`);
       
       const matchedTickets = tickets.filter(ticket => {
-        if (!ticket.tags || !Array.isArray(ticket.tags)) {
+        if (!ticket || !ticket.tags || !Array.isArray(ticket.tags) || !originalTagName) {
           return false;
         }
         
@@ -363,7 +368,7 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
         // 부분 매칭 (고객_ 접두사 제거)
         const tagWithoutPrefix = originalTagName.replace('고객_', '');
         const hasPartialMatch = ticket.tags.some(tag => 
-          tag.replace('고객_', '') === tagWithoutPrefix
+          tag && typeof tag === 'string' && tag.replace('고객_', '') === tagWithoutPrefix
         );
         
         return hasExactMatch || hasPartialMatch;
@@ -602,14 +607,14 @@ export const mockAnalyzeSelectedTags = async (tickets, selectedTags) => {
 
     // 동일한 태그 매칭 로직
     const matchedTickets = tickets.filter(ticket => {
-      if (!ticket.tags || !Array.isArray(ticket.tags)) {
+      if (!ticket || !ticket.tags || !Array.isArray(ticket.tags) || !originalTagName) {
         return false;
       }
       
       const hasExactMatch = ticket.tags.includes(originalTagName);
       const tagWithoutPrefix = originalTagName.replace('고객_', '');
       const hasPartialMatch = ticket.tags.some(tag => 
-        tag.replace('고객_', '') === tagWithoutPrefix
+        tag && typeof tag === 'string' && tag.replace('고객_', '') === tagWithoutPrefix
       );
       
       return hasExactMatch || hasPartialMatch;
