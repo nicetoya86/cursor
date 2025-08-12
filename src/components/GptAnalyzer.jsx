@@ -40,10 +40,12 @@ const GptAnalyzer = ({ tickets, onAnalysisStart, onAnalysisComplete }) => {
       // API 키 검증 시도
       if (analysisMode === 'real') {
         try {
-          validateApiKey();
+          await validateApiKey();
           useRealAPI = true;
+          console.log('✅ API 키 검증 성공, 실제 GPT 분석을 진행합니다.');
         } catch (e) {
-          console.log('API 키가 없어서 모의 분석 모드로 실행합니다.');
+          console.log('⚠️ API 키 검증 실패:', e.message);
+          console.log('🔄 모의 분석 모드로 전환합니다.');
           useRealAPI = false;
         }
       }
