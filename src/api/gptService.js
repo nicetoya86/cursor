@@ -17,18 +17,18 @@ const initializeOpenAI = () => {
     return false;
   }
   
-  try {
-    openai = new OpenAI({
-      apiKey: apiKey,
-      dangerouslyAllowBrowser: true
-    });
+    try {
+      openai = new OpenAI({
+        apiKey: apiKey,
+        dangerouslyAllowBrowser: true
+      });
     
     console.log('✅ OpenAI 클라이언트가 성공적으로 초기화되었습니다.');
-    return true;
-  } catch (error) {
-    console.error('❌ OpenAI 클라이언트 초기화 실패:', error);
-    return false;
-  }
+      return true;
+    } catch (error) {
+      console.error('❌ OpenAI 클라이언트 초기화 실패:', error);
+      return false;
+    }
 };
 
 // GPT 프롬프트 템플릿 (태그 기반 문의 내용 추출 - 넓은 범위)
@@ -80,7 +80,7 @@ export const analyzeSingleTicket = async (ticket) => {
         }
       });
     }
-
+    
     // 태그 정보 포함
     const tags = ticket.tags || [];
     const customerTags = tags.filter(tag => tag.startsWith('고객_'));
@@ -92,11 +92,11 @@ export const analyzeSingleTicket = async (ticket) => {
       model: "gpt-4",
       messages: [
         {
-          role: "system", 
+          role: "system",
           content: "당신은 고객 서비스 티켓 분석 전문가입니다. 티켓에서 실제 고객의 문의 내용만을 정확히 추출해주세요."
         },
         {
-          role: "user", 
+          role: "user",
           content: prompt
         }
       ],
@@ -142,23 +142,23 @@ export const analyzeTicketsWithGPT = async (tickets) => {
 
   for (const ticket of tickets) {
     // 분석 제외 조건 확인
-    const shouldExclude = () => {
+      const shouldExclude = () => {
       // 이미 분석된 티켓 제외
       if (ticket.gptAnalysis && ticket.gptAnalysis.extractedInquiry) {
         return true;
       }
       
       // 고객 태그가 없는 티켓 제외 (선택적)
-      const customerTags = ticket.tags && Array.isArray(ticket.tags) 
-        ? ticket.tags.filter(tag => tag && tag.startsWith('고객_'))
-        : [];
-      if (customerTags.length === 0) return true;
+        const customerTags = ticket.tags && Array.isArray(ticket.tags) 
+          ? ticket.tags.filter(tag => tag && tag.startsWith('고객_'))
+          : [];
+        if (customerTags.length === 0) return true;
+        
+        return false;
+      };
       
-      return false;
-    };
-    
-    if (shouldExclude()) {
-      excludedCount++;
+      if (shouldExclude()) {
+        excludedCount++;
       continue;
     }
 
@@ -216,7 +216,7 @@ export const validateOpenAIKey = async () => {
     });
     
     console.log('✅ API 키 검증 성공');
-    return true;
+  return true;
   } catch (error) {
     console.error('❌ API 키 검증 실패:', error);
     console.error('❌ 오류 상세:', {
@@ -280,7 +280,7 @@ export const mockAnalyzeTickets = async (tickets) => {
     if (!ticket.subject && !ticket.description) {
       mockInquiry += '구체적인 문의 내용을 확인하기 어려움';
     }
-
+    
     results.push({
       ...ticket,
       gptAnalysis: {
@@ -290,7 +290,7 @@ export const mockAnalyzeTickets = async (tickets) => {
         isMock: true
       }
     });
-
+    
     // 모의 지연
     await new Promise(resolve => setTimeout(resolve, 50));
   }
@@ -306,7 +306,7 @@ export const mockAnalyzeTickets = async (tickets) => {
       isMock: true
     }
   };
-};
+}; 
 
 // 선택된 태그별 문의 내용 분석 (완전히 새로운 버전)
 export const analyzeSelectedTags = async (tickets, selectedTags) => {
@@ -399,12 +399,12 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
         }
         
         // 설명 추가
-        if (ticket.description) {
+          if (ticket.description) {
           content += ticket.description + '\n';
         }
         
         // 댓글에서 고객 문의 내용 추출
-        if (ticket.comments && Array.isArray(ticket.comments)) {
+          if (ticket.comments && Array.isArray(ticket.comments)) {
           for (const comment of ticket.comments) {
             if (comment && comment.body) {
               // 시스템/매니저 댓글 제외
@@ -495,7 +495,7 @@ ${inquiryContents.map((content, index) => `${index + 1}. ${content}`).join('\n\n
               content: "당신은 고객 서비스 분석 전문가입니다. 고객 문의 내용을 분석하여 자주 문의하는 패턴을 찾아주세요."
             },
             {
-              role: "user", 
+              role: "user",
               content: analysisPrompt
             }
           ],
@@ -547,9 +547,9 @@ ${inquiryContents.map((content, index) => `${index + 1}. ${content}`).join('\n\n
 
     console.log('🎉 전체 분석 완료!');
     console.log(`📊 최종 결과:`, {
-      totalTags: selectedTags.length,
+        totalTags: selectedTags.length,
       totalInquiries,
-      analyzedTags: Object.keys(results).length,
+        analyzedTags: Object.keys(results).length,
       successfulTags: Object.values(results).filter(r => !r.error).length
     });
 
@@ -650,16 +650,16 @@ export const mockAnalyzeSelectedTags = async (tickets, selectedTags) => {
       totalInquiries: matchedTickets.length,
       analyzedTags: 1
     };
-  }
+    }
 
-  return {
+    return {
     success: true,
     results,
-    summary: {
+      summary: {
       totalTags: selectedTags.length,
       totalInquiries,
       analyzedTags: Object.keys(results).length
     },
-    isMock: true
+      isMock: true
   };
-};
+}; 
