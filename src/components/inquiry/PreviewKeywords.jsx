@@ -295,6 +295,15 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
       
       console.log('🔍 최종 키워드 데이터:', data);
       console.log('🔍 최종 키워드 데이터 개수:', data.length);
+      console.log('🔍 최종 키워드 데이터가 배열인가?', Array.isArray(data));
+      console.log('🔍 data 타입:', typeof data);
+      
+      // 데이터가 있는지 재확인
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        console.log('❌ 최종 데이터가 비어있거나 잘못됨');
+        return [];
+      }
+      
       return data;
     } catch (error) {
       console.error('키워드 데이터 처리 중 오류:', error);
@@ -427,13 +436,16 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
         {(() => {
           console.log('🔍 키워드 렌더링 시작');
           console.log('🔍 filteredKeywordData.length:', filteredKeywordData.length);
-          console.log('🔍 filteredKeywordData 샘플 (처음 3개):', filteredKeywordData.slice(0, 3));
-          console.log('🔍 analyzedData.keywordData:', analyzedData?.keywordData);
+          console.log('🔍 filteredKeywordData 샘플 (처음 5개):', filteredKeywordData.slice(0, 5));
+          console.log('🔍 filteredKeywordData 전체:', filteredKeywordData);
+          console.log('🔍 analyzedData.keywordData 존재:', !!analyzedData?.keywordData);
           console.log('🔍 selectedTag:', selectedTag);
           console.log('🔍 searchTerm:', searchTerm);
           
-          const isEmpty = filteredKeywordData.length === 0;
+          const isEmpty = !filteredKeywordData || filteredKeywordData.length === 0;
           console.log('🔍 isEmpty 판단:', isEmpty);
+          console.log('🔍 filteredKeywordData가 배열인가?', Array.isArray(filteredKeywordData));
+          
           return isEmpty;
         })() ? (
           <div style={{
