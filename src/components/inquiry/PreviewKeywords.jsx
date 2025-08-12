@@ -34,7 +34,10 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
         console.log(`🔍 태그 ${tag} 키워드 정보 타입:`, typeof keywordInfo);
         console.log(`🔍 태그 ${tag} 키워드 정보 키들:`, keywordInfo ? Object.keys(keywordInfo) : 'null');
         
-        if (!keywordInfo) return; // null/undefined 체크
+        if (!keywordInfo) {
+          console.log(`❌ ${tag} 키워드 정보가 null/undefined`);
+          return; // null/undefined 체크
+        }
         
         // 1. GPT 분석 결과 처리
         if (keywordInfo.type === 'gpt') {
@@ -65,6 +68,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
           keywordInfo.content.forEach((keyword, index) => {
             console.log(`📊 키워드 ${index} 처리:`, keyword);
             if (keyword && keyword.keyword) {
+              console.log(`✅ 기본 키워드 추가: ${keyword.keyword} (${keyword.count}개)`);
               data.push({
                 tag,
                 type: 'basic',
@@ -74,15 +78,18 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                 isGPT: keyword.isGPT || false,
                 id: `${tag}-${index}`
               });
+            } else {
+              console.log(`❌ 키워드 객체가 올바르지 않음:`, keyword);
             }
           });
         }
-        // 3. 기존 구조 (content 직접 배열)
+        // 3. 기존 구조 (content 직접 배열) - type이 없는 경우도 처리
         else if (keywordInfo.content && Array.isArray(keywordInfo.content)) {
           console.log(`📊 기본 키워드 처리 (기존 구조, ${tag}):`, keywordInfo.content);
           keywordInfo.content.forEach((keyword, index) => {
             console.log(`📊 기존 구조 키워드 ${index} 처리:`, keyword);
             if (keyword && keyword.keyword) {
+              console.log(`✅ 기존 구조 키워드 추가: ${keyword.keyword} (${keyword.count}개)`);
               data.push({
                 tag,
                 type: 'basic',
@@ -92,6 +99,8 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                 isGPT: keyword.isGPT || false,
                 id: `${tag}-${index}`
               });
+            } else {
+              console.log(`❌ 기존 구조 키워드 객체가 올바르지 않음:`, keyword);
             }
           });
         }
