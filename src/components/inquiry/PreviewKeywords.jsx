@@ -3,7 +3,6 @@ import React, { useState, useMemo } from 'react';
 const PreviewKeywords = ({ analyzedData, settings }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
-  const [sortOrder, setSortOrder] = useState('desc');
 
   // 태그 목록 추출
   const tags = useMemo(() => {
@@ -297,7 +296,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
       console.error('키워드 데이터 처리 중 오류:', error);
       return [];
     }
-  }, [analyzedData, selectedTag, searchTerm, sortOrder]);
+  }, [analyzedData, selectedTag, searchTerm]);
 
   // CSV 복사 함수
   const copyToCSV = () => {
@@ -424,12 +423,14 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
         {(() => {
           console.log('🔍 키워드 렌더링 시작');
           console.log('🔍 filteredKeywordData.length:', filteredKeywordData.length);
-          console.log('🔍 filteredKeywordData:', filteredKeywordData);
+          console.log('🔍 filteredKeywordData 샘플 (처음 3개):', filteredKeywordData.slice(0, 3));
           console.log('🔍 analyzedData.keywordData:', analyzedData?.keywordData);
           console.log('🔍 selectedTag:', selectedTag);
           console.log('🔍 searchTerm:', searchTerm);
           
-          return filteredKeywordData.length === 0;
+          const isEmpty = filteredKeywordData.length === 0;
+          console.log('🔍 isEmpty 판단:', isEmpty);
+          return isEmpty;
         })() ? (
           <div style={{
             textAlign: 'center',
