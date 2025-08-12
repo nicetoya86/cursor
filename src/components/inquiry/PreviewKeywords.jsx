@@ -41,8 +41,12 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
         // 1. GPT 분석 결과 처리
         if (keywordInfo.type === 'gpt') {
           console.log(`🤖 GPT 키워드 처리 시작 (${tag})`);
-          const keywords = Array.isArray(keywordInfo.content) ? keywordInfo.content : [];
+          // GPT 키워드는 keywords 배열 또는 content 배열에 있을 수 있음
+          const keywords = Array.isArray(keywordInfo.keywords) ? keywordInfo.keywords : 
+                          Array.isArray(keywordInfo.content) ? keywordInfo.content : [];
           console.log(`🤖 GPT 키워드 배열 (${tag}):`, keywords);
+          console.log(`🤖 keywordInfo.keywords:`, keywordInfo.keywords);
+          console.log(`🤖 keywordInfo.content:`, keywordInfo.content);
           
           if (keywords.length > 0) {
             const processedKeywords = keywords.map(k => {
