@@ -6,6 +6,7 @@ import CsvDownloadButton from './components/CsvDownloadButton';
 import GptAnalyzer from './components/GptAnalyzer';
 import TagAnalysis from './components/TagAnalysis';
 import TagSelector from './components/TagSelector';
+import InquiryAnalysisTab from './components/InquiryAnalysisTab';
 import { useJsonTickets } from './hooks/useJsonTickets';
 import { 
   analyzeSelectedTags, 
@@ -15,8 +16,10 @@ import {
 import './App.css';
 
 function App() {
-  // 임시 테스트 화면 상태
-  const [showFullApp, setShowFullApp] = useState(false);
+  // 메인 탭 상태 관리
+  const [activeTab, setActiveTab] = useState('zendesk'); // 'zendesk' | 'inquiry'
+  
+  // 임시 테스트 화면 상태 제거 - 바로 메인 화면 표시
   
   // GPT 분석 관련 상태 (useJsonTickets 이전에 정의)
   const [analyzedTickets, setAnalyzedTickets] = useState([]);
@@ -216,33 +219,57 @@ function App() {
     });
   }, [showFilterAndResults, hasData, allTickets, filteredTickets, analyzedTickets, showAnalyzedResults]);
 
-  // 임시 테스트 화면
-  if (!showFullApp) {
-    return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h1>🎫 Zendesk 티켓 분석기</h1>
-        <p>배포 테스트 성공! 🎉</p>
-        <button 
-          onClick={() => setShowFullApp(true)}
-          style={{ 
-            padding: '10px 20px', 
-            fontSize: '16px', 
-            backgroundColor: '#007bff', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: '5px', 
-            cursor: 'pointer' 
-          }}
-        >
-          전체 앱 실행
-        </button>
-      </div>
-    );
-  }
+  // 바로 메인 애플리케이션 표시
 
   return (
     <div className="App">
-      <div className="container">
+      {/* 탭 네비게이션 */}
+      <div style={{
+        backgroundColor: '#f8f9fa',
+        borderBottom: '2px solid #e9ecef',
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '10px 0'
+      }}>
+        <div style={{ display: 'flex' }}>
+          <button
+            onClick={() => setActiveTab('zendesk')}
+            style={{
+              padding: '15px 30px',
+              border: 'none',
+              backgroundColor: activeTab === 'zendesk' ? '#007bff' : 'transparent',
+              color: activeTab === 'zendesk' ? 'white' : '#495057',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              borderRadius: activeTab === 'zendesk' ? '8px 8px 0 0' : '0',
+              transition: 'all 0.2s'
+            }}
+          >
+            🎫 Zendesk 티켓 분석
+          </button>
+          <button
+            onClick={() => setActiveTab('inquiry')}
+            style={{
+              padding: '15px 30px',
+              border: 'none',
+              backgroundColor: activeTab === 'inquiry' ? '#007bff' : 'transparent',
+              color: activeTab === 'inquiry' ? 'white' : '#495057',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              borderRadius: activeTab === 'inquiry' ? '8px 8px 0 0' : '0',
+              transition: 'all 0.2s'
+            }}
+          >
+            📊 문의 분석 (채널톡)
+          </button>
+        </div>
+      </div>
+
+      {/* 탭 컨텐츠 */}
+      {activeTab === 'zendesk' ? (
+        <div className="container">
         {/* 헤더 */}
         <header className="app-header">
           <h1>🎫 Zendesk 티켓 분석기</h1>
@@ -430,7 +457,10 @@ function App() {
             isAnalyzed={analyzedTickets.length > 0}
           />
         )}
-      </div>
+        </div>
+      ) : (
+        <InquiryAnalysisTab />
+      )}
     </div>
   );
 }

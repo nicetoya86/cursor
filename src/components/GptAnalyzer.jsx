@@ -35,27 +35,38 @@ const GptAnalyzer = ({ tickets, onAnalysisStart, onAnalysisComplete }) => {
     setError(null);
 
     try {
-      let useRealAPI = false;
+      let result;
       
-      // API 키 검증 시도
       if (analysisMode === 'real') {
+        // 실제 GPT API 모드 - API 키 검증 후 실제 분석 실행
         try {
           console.log('🔐 API 키 검증 중...');
           await validateApiKey();
           console.log('✅ API 키 검증 성공');
-          useRealAPI = true;
-        } catch (e) {
-          console.log('❌ API 키 검증 실패:', e.message);
-          console.log('🔄 모의 분석 모드로 전환합니다.');
-          useRealAPI = false;
+          
+          console.log('🤖 실제 GPT API로 분석을 시작합니다...');
+          result = await analyzeTicketsWithGPT(tickets, setProgress);
+          
+        } catch (apiError) {
+          console.error('❌ GPT API 분석 실패:', apiError.message);
+          
+          // API 키 관련 오류인지 확인
+          if (apiError.message.includes('API 키') || 
+              apiError.message.includes('401') || 
+              apiError.message.includes('Unauthorized')) {
+            throw new Error('OpenAI API 키가 올바르지 않습니다. API 키를 확인해주세요.');
+          } else if (apiError.message.includes('모델') || 
+                     apiError.message.includes('o3') ||
+                     apiError.message.includes('model')) {
+            throw new Error('GPT o3 모델에 접근할 수 없습니다. API 키 권한을 확인해주세요.');
+          } else if (apiError.message.includes('시간이 초과')) {
+            throw new Error('API 요청 시간이 초과되었습니다. 다시 시도해주세요.');
+          } else {
+            throw new Error(`GPT API 분석 실패: ${apiError.message}`);
+          }
         }
-      }
-
-      let result;
-      if (useRealAPI) {
-        console.log('🤖 실제 GPT API로 분석을 시작합니다...');
-        result = await analyzeTicketsWithGPT(tickets, setProgress);
       } else {
+        // 모의 분석 모드
         console.log('🎭 모의 분석 모드로 실행합니다...');
         result = await mockAnalyzeTickets(tickets, setProgress);
       }
@@ -83,7 +94,11 @@ const GptAnalyzer = ({ tickets, onAnalysisStart, onAnalysisComplete }) => {
       
       let userMessage = '분석 중 오류가 발생했습니다.';
       if (error.message.includes('API 키')) {
-        userMessage = 'OpenAI API 키가 설정되지 않았습니다. 모의 분석 모드를 선택해주세요.';
+        userMessage = error.message; // 구체적인 API 키 오류 메시지 사용
+      } else if (error.message.includes('GPT o3 모델')) {
+        userMessage = error.message; // 구체적인 모델 오류 메시지 사용
+      } else if (error.message.includes('시간이 초과')) {
+        userMessage = error.message; // 구체적인 타임아웃 오류 메시지 사용
       } else if (error.message.includes('네트워크')) {
         userMessage = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
       } else {
