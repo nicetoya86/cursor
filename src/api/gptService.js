@@ -33,31 +33,32 @@ const initializeOpenAI = () => {
   }
 };
 
-// GPT 프롬프트 템플릿 (태그 기반 문의 내용 추출 - 넓은 범위)
+// GPT 프롬프트 템플릿 (태그 기반 문의 내용 추출 - 개선된 버전)
 const createExtractionPrompt = (ticketContent, tags) => {
   const tagList = Array.isArray(tags) ? tags.join(', ') : tags;
   
-  return `다음 티켓에서 **실제 고객이 작성한 문의 내용만** 추출해주세요.
+  return `다음 고객 서비스 티켓을 분석하여 고객의 문의 내용을 추출해주세요.
 
-**추출 원칙:**
-1. **고객이 직접 작성한 문의 내용만** 추출 (상담원, 매니저, 시스템 메시지 제외)
-2. **구체적인 문제나 요청사항**이 포함된 내용만 선별
-3. **인사말, 감사인사, 단순 응답**은 제외
-4. **개인정보 (전화번호, 주민번호, 카드번호 등)**는 [개인정보]로 대체
+**분석 목표:**
+고객이 실제로 문의하거나 요청한 내용을 파악하여 요약해주세요.
 
-**제외 대상:**
-- 상담원/매니저 답변: "확인해드리겠습니다", "처리해드리겠습니다" 등
-- 시스템 메시지: "티켓이 생성되었습니다", "상태가 변경되었습니다" 등
-- 단순 인사: "안녕하세요", "감사합니다", "수고하세요" 등
-- BOT 메시지: 자동 응답, 템플릿 메시지 등
+**추출 방법:**
+1. 티켓 제목, 설명, 댓글에서 고객의 의도를 파악
+2. 태그 정보를 참고하여 문의 맥락 이해 
+3. 단순한 인사말이나 시스템 메시지는 제외
+4. 구체적인 문의가 없더라도 태그나 상황으로 유추 가능한 내용은 포함
 
-**추출 결과:**
-고객의 실제 문의 내용이 있으면 그대로 출력하고, 없으면 "구체적인 문의 내용 없음"이라고 답변하세요.
+**태그 정보:** ${tagList || '없음'}
+
+**출력 형식:**
+- 구체적인 문의가 있는 경우: 고객의 문의 내용을 명확하게 요약
+- 구체적인 문의가 없는 경우: 태그나 상황을 바탕으로 추정되는 문의 유형을 설명
+- 예: "병원 서비스에 대한 불만 문의", "결제 관련 문의", "계정 문제 해결 요청" 등
 
 **분석할 티켓:**
 ${ticketContent}
 
-**태그 관련 고객 내용 (넓은 범위):**`;
+**고객 문의 내용:**`;
 };
 
 // 단일 티켓 분석
@@ -68,29 +69,52 @@ export const analyzeSingleTicket = async (ticket) => {
       throw new Error('유효하지 않은 티켓 데이터입니다.');
     }
 
-    // 티켓 내용 구성
+    // 티켓 내용 구성 (개선된 버전)
     let content = '';
     
-    if (ticket.subject) {
+    // 기본 정보 추가
+    content += `티켓 ID: ${ticket.id}\n`;
+    content += `상태: ${ticket.status || '알 수 없음'}\n`;
+    content += `생성일: ${ticket.created_at || '알 수 없음'}\n`;
+    
+    if (ticket.subject && !ticket.subject.includes('님과의 대화')) {
       content += `제목: ${ticket.subject}\n`;
     }
     
-    if (ticket.description) {
+    if (ticket.description && !ticket.description.includes('님과의 대화')) {
       content += `설명: ${ticket.description}\n`;
     }
     
-    if (ticket.comments && Array.isArray(ticket.comments)) {
-      content += `댓글:\n`;
-      ticket.comments.forEach((comment, index) => {
-        if (comment && comment.body) {
-          content += `${index + 1}. ${comment.body}\n`;
-        }
-      });
-    }
-    
-    // 태그 정보 포함
+    // 태그 정보를 먼저 분석
     const tags = ticket && ticket.tags && Array.isArray(ticket.tags) ? ticket.tags : [];
     const customerTags = tags.filter(tag => tag && typeof tag === 'string' && tag.startsWith('고객_'));
+    const allTags = tags.filter(tag => tag && typeof tag === 'string');
+    
+    if (allTags.length > 0) {
+      content += `태그: ${allTags.join(', ')}\n`;
+    }
+    
+    // 댓글 내용 추가 (의미있는 내용만)
+    if (ticket.comments && Array.isArray(ticket.comments)) {
+      const meaningfulComments = ticket.comments.filter(comment => 
+        comment && comment.body && 
+        !comment.body.includes('님과의 대화') &&
+        comment.body.length > 5 &&
+        !comment.body.includes('티켓이 생성되었습니다')
+      );
+      
+      if (meaningfulComments.length > 0) {
+        content += `댓글:\n`;
+        meaningfulComments.forEach((comment, index) => {
+          content += `${index + 1}. ${comment.body}\n`;
+        });
+      }
+    }
+    
+    // 내용이 너무 적으면 티켓 메타데이터 활용
+    if (content.length < 100 && customerTags.length > 0) {
+      content += `\n고객 분류 태그를 통해 파악된 문의 유형: ${customerTags.join(', ')}\n`;
+    }
 
     const prompt = createExtractionPrompt(content, customerTags);
     
@@ -107,7 +131,7 @@ export const analyzeSingleTicket = async (ticket) => {
       messages: [
         {
           role: "system",
-          content: "당신은 고객 서비스 티켓 분석 전문가입니다. 티켓에서 실제 고객의 문의 내용만을 정확히 추출해주세요."
+          content: "당신은 고객 서비스 티켓 분석 전문가입니다. 고객의 문의 의도를 파악하여 도움이 되는 분석을 제공해주세요. 구체적인 문의가 없더라도 태그나 상황 정보를 활용하여 고객이 어떤 도움이 필요한지 추정해주세요."
         },
         {
           role: "user",
