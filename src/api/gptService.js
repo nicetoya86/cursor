@@ -33,32 +33,34 @@ const initializeOpenAI = () => {
   }
 };
 
-// GPT 프롬프트 템플릿 (태그 기반 문의 내용 추출 - 개선된 버전)
+// GPT 프롬프트 템플릿 (실제 문의 내용 그대로 추출)
 const createExtractionPrompt = (ticketContent, tags) => {
   const tagList = Array.isArray(tags) ? tags.join(', ') : tags;
   
-  return `다음 고객 서비스 티켓을 분석하여 고객의 문의 내용을 추출해주세요.
+  return `다음 고객 서비스 티켓에서 고객이 실제로 작성한 문의 내용을 그대로 추출해주세요.
 
-**분석 목표:**
-고객이 실제로 문의하거나 요청한 내용을 파악하여 요약해주세요.
+**추출 원칙:**
+1. 고객이 직접 작성한 원본 문의 내용을 그대로 복사하여 출력
+2. 요약하거나 의역하지 말고 원문 그대로 보존
+3. 여러 문의가 있으면 모두 포함
+4. 상담원이나 시스템 메시지는 제외
 
-**추출 방법:**
-1. 티켓 제목, 설명, 댓글에서 고객의 의도를 파악
-2. 태그 정보를 참고하여 문의 맥락 이해 
-3. 단순한 인사말이나 시스템 메시지는 제외
-4. 구체적인 문의가 없더라도 태그나 상황으로 유추 가능한 내용은 포함
+**제외 대상:**
+- 상담원/매니저 답변
+- 시스템 자동 메시지
+- 단순 인사말만 있는 경우
+- "님과의 대화" 같은 제목
 
 **태그 정보:** ${tagList || '없음'}
 
-**출력 형식:**
-- 구체적인 문의가 있는 경우: 고객의 문의 내용을 명확하게 요약
-- 구체적인 문의가 없는 경우: 태그나 상황을 바탕으로 추정되는 문의 유형을 설명
-- 예: "병원 서비스에 대한 불만 문의", "결제 관련 문의", "계정 문제 해결 요청" 등
+**출력 방식:**
+- 실제 문의 내용이 있으면: 고객이 작성한 원문을 그대로 출력
+- 구체적인 문의가 없으면: "명확한 문의 내용이 확인되지 않습니다."
 
 **분석할 티켓:**
 ${ticketContent}
 
-**고객 문의 내용:**`;
+**고객이 작성한 원본 문의 내용:**`;
 };
 
 // 단일 티켓 분석
@@ -131,7 +133,7 @@ export const analyzeSingleTicket = async (ticket) => {
       messages: [
         {
           role: "system",
-          content: "당신은 고객 서비스 티켓 분석 전문가입니다. 고객의 문의 의도를 파악하여 도움이 되는 분석을 제공해주세요. 구체적인 문의가 없더라도 태그나 상황 정보를 활용하여 고객이 어떤 도움이 필요한지 추정해주세요."
+          content: "당신은 고객 서비스 티켓 분석 전문가입니다. 고객이 실제로 작성한 문의 내용을 원문 그대로 추출해주세요. 요약하거나 해석하지 말고, 고객의 원본 문의 내용만을 정확히 복사하여 출력해주세요."
         },
         {
           role: "user",
@@ -187,8 +189,11 @@ export const analyzeSingleTicket = async (ticket) => {
   }
 };
 
-// 여러 티켓 배치 분석
-export const analyzeTicketsWithGPT = async (tickets) => {
+// 병렬 처리를 위한 배치 크기 설정
+const BATCH_SIZE = 3; // 동시에 처리할 티켓 수
+
+// 여러 티켓 배치 분석 (병렬 처리로 속도 향상)
+export const analyzeTicketsWithGPT = async (tickets, progressCallback) => {
   // 입력 검증
   if (!tickets || !Array.isArray(tickets) || tickets.length === 0) {
     throw new Error('분석할 티켓 데이터가 없습니다.');
@@ -201,50 +206,88 @@ export const analyzeTicketsWithGPT = async (tickets) => {
     }
   }
 
-  const results = [];
+  // 분석 대상 티켓 필터링
+  const validTickets = [];
   let excludedCount = 0;
 
   for (const ticket of tickets) {
-    // 분석 제외 조건 확인
-      const shouldExclude = () => {
+    const shouldExclude = () => {
       // 이미 분석된 티켓 제외
       if (ticket.gptAnalysis && ticket.gptAnalysis.extractedInquiry) {
         return true;
       }
       
       // 고객 태그가 없는 티켓 제외 (선택적)
-        const customerTags = ticket && ticket.tags && Array.isArray(ticket.tags) 
-          ? ticket.tags.filter(tag => tag && typeof tag === 'string' && tag.startsWith('고객_'))
-          : [];
-        if (customerTags.length === 0) return true;
-        
-        return false;
-      };
+      const customerTags = ticket && ticket.tags && Array.isArray(ticket.tags) 
+        ? ticket.tags.filter(tag => tag && typeof tag === 'string' && tag.startsWith('고객_'))
+        : [];
+      if (customerTags.length === 0) return true;
       
-      if (shouldExclude()) {
-        excludedCount++;
-      continue;
+      return false;
+    };
+    
+    if (shouldExclude()) {
+      excludedCount++;
+    } else {
+      validTickets.push(ticket);
     }
+  }
 
-    try {
-      console.log(`분석 중: 티켓 ${ticket.id}`);
-      const analyzedTicket = await analyzeSingleTicket(ticket);
-      results.push(analyzedTicket);
-      
-      // API 호출 제한을 위한 지연
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-    } catch (error) {
-      console.error(`티켓 ${ticket.id} 분석 실패:`, error);
-      results.push({
-        ...ticket,
-        gptAnalysis: {
-          extractedInquiry: '분석 실패',
-          error: error.message,
-          processedAt: new Date().toISOString()
-        }
-      });
+  const results = [];
+  let processedCount = 0;
+  const totalTickets = tickets.length;
+  const totalValidTickets = validTickets.length;
+
+  console.log(`🚀 병렬 분석 시작: 전체 ${totalTickets}개 중 ${totalValidTickets}개 분석 대상`);
+
+  // 배치별로 병렬 처리
+  for (let i = 0; i < validTickets.length; i += BATCH_SIZE) {
+    const batch = validTickets.slice(i, i + BATCH_SIZE);
+    
+    console.log(`📦 배치 ${Math.floor(i / BATCH_SIZE) + 1} 처리 중: ${batch.length}개 티켓`);
+    
+    // 배치 내 티켓들을 병렬로 처리
+    const batchPromises = batch.map(async (ticket, batchIndex) => {
+      try {
+        const globalIndex = i + batchIndex + 1;
+        console.log(`🔍 분석 중: 티켓 ${ticket.id} (${globalIndex}/${totalValidTickets})`);
+        
+        const analyzedTicket = await analyzeSingleTicket(ticket);
+        return analyzedTicket;
+      } catch (error) {
+        console.error(`❌ 티켓 ${ticket.id} 분석 실패:`, error);
+        return {
+          ...ticket,
+          gptAnalysis: {
+            extractedInquiry: '분석 실패',
+            error: error.message,
+            processedAt: new Date().toISOString()
+          }
+        };
+      }
+    });
+
+    // 배치 완료 대기
+    const batchResults = await Promise.all(batchPromises);
+    results.push(...batchResults);
+    
+    processedCount += batch.length;
+    
+    // 진행률 업데이트
+    const currentProgress = ((excludedCount + processedCount) / totalTickets) * 100;
+    if (progressCallback) {
+      progressCallback(currentProgress);
     }
+    
+    // 배치 간 짧은 지연 (API 제한 고려)
+    if (i + BATCH_SIZE < validTickets.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  
+  // 최종 진행률 100% 업데이트
+  if (progressCallback) {
+    progressCallback(100);
   }
 
   return {
@@ -322,11 +365,20 @@ export const validateOpenAIKey = async () => {
 export const validateApiKey = validateOpenAIKey;
 
 // 개발용 모의 분석 (API 키가 없을 때 사용)
-export const mockAnalyzeTickets = async (tickets) => {
+export const mockAnalyzeTickets = async (tickets, progressCallback) => {
   const results = [];
   let excludedCount = 0;
+  let processedCount = 0;
+  const totalTickets = tickets.length;
 
-  for (const ticket of tickets) {
+  for (let i = 0; i < tickets.length; i++) {
+    const ticket = tickets[i];
+    
+    // 진행률 업데이트
+    const currentProgress = (processedCount / totalTickets) * 100;
+    if (progressCallback) {
+      progressCallback(currentProgress);
+    }
     // 분석 제외 조건 확인 (실제 분석과 동일)
     const shouldExclude = () => {
       if (ticket.gptAnalysis && ticket.gptAnalysis.extractedInquiry) {
@@ -343,6 +395,7 @@ export const mockAnalyzeTickets = async (tickets) => {
     
     if (shouldExclude()) {
       excludedCount++;
+      processedCount++;
       continue;
     }
 
@@ -372,8 +425,15 @@ export const mockAnalyzeTickets = async (tickets) => {
       }
     });
     
-    // 모의 지연
-    await new Promise(resolve => setTimeout(resolve, 50));
+    processedCount++;
+    
+    // 모의 지연 (속도 향상을 위해 25ms로 단축)
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
+  
+  // 최종 진행률 100% 업데이트
+  if (progressCallback) {
+    progressCallback(100);
   }
 
   return {
