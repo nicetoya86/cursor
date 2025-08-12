@@ -40,10 +40,13 @@ const GptAnalyzer = ({ tickets, onAnalysisStart, onAnalysisComplete }) => {
       // API 키 검증 시도
       if (analysisMode === 'real') {
         try {
+          console.log('🔐 API 키 검증 중...');
           await validateApiKey();
+          console.log('✅ API 키 검증 성공');
           useRealAPI = true;
         } catch (e) {
-          console.log('API 키가 없어서 모의 분석 모드로 실행합니다.');
+          console.log('❌ API 키 검증 실패:', e.message);
+          console.log('🔄 모의 분석 모드로 전환합니다.');
           useRealAPI = false;
         }
       }
@@ -61,9 +64,7 @@ const GptAnalyzer = ({ tickets, onAnalysisStart, onAnalysisComplete }) => {
       
       if (onAnalysisComplete) {
         try {
-          // analyzeTicketsWithGPT의 결과 구조에 맞게 수정
-          const analyzedTickets = result.results || [];
-          onAnalysisComplete(analyzedTickets, result.summary);
+      onAnalysisComplete(result.analyzedTickets, result.summary);
           console.log('✅ onAnalysisComplete 호출 완료');
         } catch (error) {
           console.error('❌ onAnalysisComplete 호출 오류:', error);

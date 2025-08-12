@@ -61,6 +61,11 @@ ${ticketContent}
 // 단일 티켓 분석
 export const analyzeSingleTicket = async (ticket) => {
   try {
+    // 입력 검증
+    if (!ticket || typeof ticket !== 'object') {
+      throw new Error('유효하지 않은 티켓 데이터입니다.');
+    }
+
     // 티켓 내용 구성
     let content = '';
     
@@ -130,6 +135,11 @@ export const analyzeSingleTicket = async (ticket) => {
 
 // 여러 티켓 배치 분석
 export const analyzeTicketsWithGPT = async (tickets) => {
+  // 입력 검증
+  if (!tickets || !Array.isArray(tickets) || tickets.length === 0) {
+    throw new Error('분석할 티켓 데이터가 없습니다.');
+  }
+
   if (!openai) {
     const initialized = initializeOpenAI();
     if (!initialized) {
@@ -141,31 +151,24 @@ export const analyzeTicketsWithGPT = async (tickets) => {
   let excludedCount = 0;
 
   for (const ticket of tickets) {
-    // 티켓 유효성 검사
-    if (!ticket || typeof ticket !== 'object') {
-      console.log('⚠️ 유효하지 않은 티켓 데이터 건너뜀:', ticket);
-      excludedCount++;
-      continue;
-    }
-
     // 분석 제외 조건 확인
-    const shouldExclude = () => {
+      const shouldExclude = () => {
       // 이미 분석된 티켓 제외
       if (ticket.gptAnalysis && ticket.gptAnalysis.extractedInquiry) {
         return true;
       }
       
       // 고객 태그가 없는 티켓 제외 (선택적)
-      const customerTags = ticket && ticket.tags && Array.isArray(ticket.tags) 
-        ? ticket.tags.filter(tag => tag && typeof tag === 'string' && tag.startsWith('고객_'))
-        : [];
-      if (customerTags.length === 0) return true;
+        const customerTags = ticket && ticket.tags && Array.isArray(ticket.tags) 
+          ? ticket.tags.filter(tag => tag && typeof tag === 'string' && tag.startsWith('고객_'))
+          : [];
+        if (customerTags.length === 0) return true;
+        
+        return false;
+      };
       
-      return false;
-    };
-    
-    if (shouldExclude()) {
-      excludedCount++;
+      if (shouldExclude()) {
+        excludedCount++;
       continue;
     }
 
@@ -206,15 +209,15 @@ export const analyzeTicketsWithGPT = async (tickets) => {
 export const validateOpenAIKey = async () => {
   console.log('🔐 API 키 검증 시작...');
   
-  const initialized = initializeOpenAI();
-  
-  if (!initialized) {
-    console.log('❌ OpenAI 클라이언트 초기화 실패');
-    throw new Error('OpenAI API 키가 설정되지 않았거나 올바르지 않습니다.');
-  }
-  
-  // 실제 API 호출로 키 유효성 테스트
   try {
+    const initialized = initializeOpenAI();
+    
+    if (!initialized) {
+      console.log('❌ OpenAI 클라이언트 초기화 실패');
+      throw new Error('OpenAI API 키가 설정되지 않았거나 올바르지 않습니다.');
+    }
+    
+    // 실제 API 호출로 키 유효성 테스트
     console.log('🧪 API 키 유효성 테스트 중...');
     const testResponse = await openai.chat.completions.create({
       model: "gpt-4",
@@ -227,22 +230,28 @@ export const validateOpenAIKey = async () => {
   } catch (error) {
     console.error('❌ API 키 검증 실패:', error);
     console.error('❌ 오류 상세:', {
-      status: error.status,
-      message: error.message,
-      type: error.type,
-      code: error.code
+      status: error?.status || 'unknown',
+      message: error?.message || 'unknown error',
+      type: error?.type || 'unknown',
+      name: error?.name || 'unknown'
     });
     
+    // 네트워크 오류 처리
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('네트워크 연결 오류입니다. 인터넷 연결을 확인해주세요.');
+    }
+    
+    // OpenAI API 오류 처리
     if (error.status === 401) {
       throw new Error('OpenAI API 키가 유효하지 않습니다. API 키를 확인해주세요.');
     } else if (error.status === 429) {
       throw new Error('OpenAI API 사용량 한도를 초과했습니다.');
     } else if (error.status === 403) {
       throw new Error('OpenAI API 접근 권한이 없습니다.');
-    } else if (error.code === 'insufficient_quota') {
-      throw new Error('OpenAI API 크레딧이 부족합니다. 계정을 확인해주세요.');
+    } else if (error.status >= 500) {
+      throw new Error('OpenAI 서버 오류입니다. 잠시 후 다시 시도해주세요.');
     } else {
-      throw new Error(`OpenAI API 오류: ${error.message}`);
+      throw new Error(`OpenAI API 오류 (${error.status || 'unknown'}): ${error.message || 'unknown error'}`);
     }
   }
 };
@@ -327,12 +336,21 @@ export const analyzeSelectedTags = async (tickets, selectedTags) => {
 
   try {
     // 입력 검증
-    if (!tickets || !Array.isArray(tickets)) {
-      throw new Error('유효하지 않은 티켓 데이터입니다.');
+    if (!tickets || !Array.isArray(tickets) || tickets.length === 0) {
+      throw new Error('분석할 티켓 데이터가 없습니다.');
     }
     
     if (!selectedTags || !Array.isArray(selectedTags) || selectedTags.length === 0) {
       throw new Error('선택된 태그가 없습니다.');
+    }
+
+    // 선택된 태그 구조 검증
+    for (let i = 0; i < selectedTags.length; i++) {
+      const tag = selectedTags[i];
+      if (!tag || typeof tag !== 'object' || !tag.displayName || !tag.originalName) {
+        console.error('❌ 잘못된 태그 구조:', tag);
+        throw new Error(`선택된 태그 중 잘못된 데이터가 있습니다 (인덱스: ${i})`);
+      }
     }
 
     // OpenAI 클라이언트 초기화 확인
