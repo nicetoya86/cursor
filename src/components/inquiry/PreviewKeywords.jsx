@@ -239,10 +239,20 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
       console.log('🔍 처리된 키워드 데이터:', data);
       console.log('🔍 처리된 키워드 데이터 개수:', data.length);
       
+      console.log('🔍 필터링 전 데이터 개수:', data.length);
+      console.log('🔍 필터링 전 데이터 샘플:', data.slice(0, 3));
+      
       // 태그 필터링
       if (selectedTag) {
         const beforeFilter = data.length;
-        data = data.filter(item => item.tag === selectedTag);
+        console.log(`🔍 태그 필터링 시작: selectedTag="${selectedTag}"`);
+        data = data.filter(item => {
+          const matches = item.tag === selectedTag;
+          if (!matches) {
+            console.log(`🔍 태그 불일치: "${item.tag}" !== "${selectedTag}"`);
+          }
+          return matches;
+        });
         console.log(`🔍 태그 필터링: ${beforeFilter} -> ${data.length} (태그: ${selectedTag})`);
       }
       
@@ -250,24 +260,33 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const beforeSearch = data.length;
+        console.log(`🔍 검색 필터링 시작: searchTerm="${searchTerm}"`);
         data = data.filter(item => {
           try {
+            let matches = false;
             if (item.type === 'gpt') {
-              return item.tag.toLowerCase().includes(term) ||
-                     (Array.isArray(item.keywords) && item.keywords.some(k => 
-                       typeof k === 'string' && k.toLowerCase().includes(term)
-                     ));
+              matches = item.tag.toLowerCase().includes(term) ||
+                       (Array.isArray(item.keywords) && item.keywords.some(k => 
+                         typeof k === 'string' && k.toLowerCase().includes(term)
+                       ));
             } else {
-              return item.tag.toLowerCase().includes(term) ||
-                     (item.keyword && item.keyword.toLowerCase().includes(term));
+              matches = item.tag.toLowerCase().includes(term) ||
+                       (item.keyword && item.keyword.toLowerCase().includes(term));
             }
+            if (!matches) {
+              console.log(`🔍 검색 불일치:`, item);
+            }
+            return matches;
           } catch (error) {
-            console.warn('검색 필터링 중 오류:', error);
+            console.warn('검색 필터링 중 오류:', error, item);
             return false;
           }
         });
         console.log(`🔍 검색 필터링: ${beforeSearch} -> ${data.length} (검색어: ${term})`);
       }
+      
+      console.log('🔍 필터링 후 데이터 개수:', data.length);
+      console.log('🔍 필터링 후 데이터 샘플:', data.slice(0, 3));
       
       // 정렬 (빈도가 높은 순 우선, GPT는 별도 표시)
       data.sort((a, b) => {
@@ -306,7 +325,12 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
       
       return data;
     } catch (error) {
-      console.error('키워드 데이터 처리 중 오류:', error);
+      console.error('❌❌❌ 키워드 데이터 처리 중 오류 발생 ❌❌❌:', error);
+      console.error('❌ 오류 스택:', error.stack);
+      console.error('❌ 오류 메시지:', error.message);
+      console.error('❌ analyzedData:', analyzedData);
+      console.error('❌ selectedTag:', selectedTag);
+      console.error('❌ searchTerm:', searchTerm);
       return [];
     }
   }, [analyzedData, selectedTag, searchTerm]);
