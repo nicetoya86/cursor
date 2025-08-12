@@ -9,7 +9,8 @@ const initializeOpenAI = () => {
   console.log('🔑 API 키 확인:', {
     hasApiKey: !!apiKey,
     apiKeyLength: apiKey ? apiKey.length : 0,
-    apiKeyStart: apiKey ? apiKey.substring(0, 7) + '...' : 'none'
+    apiKeyStart: apiKey ? apiKey.substring(0, 7) + '...' : 'none',
+    apiKeyEnd: apiKey ? '...' + apiKey.substring(apiKey.length - 4) : 'none'
   });
   
   if (!apiKey || apiKey.trim() === '' || apiKey === 'your-api-key-here') {
@@ -17,18 +18,19 @@ const initializeOpenAI = () => {
     return false;
   }
   
-    try {
-      openai = new OpenAI({
-        apiKey: apiKey,
-        dangerouslyAllowBrowser: true
-      });
+  try {
+    console.log('🔧 OpenAI 클라이언트 생성 중...');
+    openai = new OpenAI({
+      apiKey: apiKey,
+      dangerouslyAllowBrowser: true
+    });
     
     console.log('✅ OpenAI 클라이언트가 성공적으로 초기화되었습니다.');
-      return true;
-    } catch (error) {
-      console.error('❌ OpenAI 클라이언트 초기화 실패:', error);
-      return false;
-    }
+    return true;
+  } catch (error) {
+    console.error('❌ OpenAI 클라이언트 초기화 실패:', error);
+    return false;
+  }
 };
 
 // GPT 프롬프트 템플릿 (태그 기반 문의 내용 추출 - 넓은 범위)
@@ -92,9 +94,16 @@ export const analyzeSingleTicket = async (ticket) => {
 
     const prompt = createExtractionPrompt(content, customerTags);
     
+    console.log('📤 티켓 분석 API 호출 시작:', {
+      ticketId: ticket.id,
+      model: 'gpt-4o-mini',
+      promptLength: prompt.length,
+      customerTagsCount: customerTags.length
+    });
+    
     // OpenAI API 호출
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -107,6 +116,13 @@ export const analyzeSingleTicket = async (ticket) => {
       ],
       max_tokens: 1000,
       temperature: 0.3
+    });
+    
+    console.log('📥 티켓 분석 API 응답 받음:', {
+      ticketId: ticket.id,
+      hasResponse: !!response,
+      hasChoices: !!(response?.choices),
+      choicesLength: response?.choices?.length || 0
     });
 
     const extractedContent = response.choices[0].message.content.trim();
@@ -122,10 +138,24 @@ export const analyzeSingleTicket = async (ticket) => {
 
   } catch (error) {
     console.error('티켓 분석 오류:', error);
+    
+    let errorMessage = '분석 실패 - API 오류가 발생했습니다.';
+    
+    // 구체적인 오류 메시지 제공
+    if (error.status === 401) {
+      errorMessage = '분석 실패 - API 키가 유효하지 않습니다.';
+    } else if (error.status === 429) {
+      errorMessage = '분석 실패 - API 사용량 한도를 초과했습니다.';
+    } else if (error.status === 400) {
+      errorMessage = '분석 실패 - 잘못된 모델명 또는 요청입니다.';
+    } else if (error.message?.includes('model')) {
+      errorMessage = '분석 실패 - 지원하지 않는 모델입니다.';
+    }
+    
     return {
       ...ticket,
       gptAnalysis: {
-        extractedInquiry: '분석 실패 - API 오류가 발생했습니다.',
+        extractedInquiry: errorMessage,
         error: error.message,
         processedAt: new Date().toISOString()
       }
@@ -219,10 +249,18 @@ export const validateOpenAIKey = async () => {
     
     // 실제 API 호출로 키 유효성 테스트
     console.log('🧪 API 키 유효성 테스트 중...');
+    console.log('📋 사용할 모델: gpt-4o-mini');
+    
     const testResponse = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: "test" }],
-      max_tokens: 1
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: "Hello" }],
+      max_tokens: 5
+    });
+    
+    console.log('📥 테스트 응답 받음:', {
+      hasResponse: !!testResponse,
+      hasChoices: !!(testResponse?.choices),
+      choicesLength: testResponse?.choices?.length || 0
     });
     
     console.log('✅ API 키 검증 성공');
@@ -521,7 +559,7 @@ ${inquiryContents.map((content, index) => `${index + 1}. ${content}`).join('\n\n
 
         // OpenAI API 호출
         const response = await openai.chat.completions.create({
-          model: "gpt-4",
+          model: "gpt-4o-mini",
           messages: [
             {
               role: "system", 

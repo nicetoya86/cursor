@@ -83,10 +83,25 @@ function App() {
 
   // GPT 분석 완료 핸들러
   const handleAnalysisComplete = useCallback((analyzed, summary) => {
+    console.log('🎯 handleAnalysisComplete 호출됨:', {
+      analyzedCount: analyzed?.length || 0,
+      summary
+    });
+    
+    if (!analyzed || !Array.isArray(analyzed)) {
+      console.error('❌ 잘못된 분석 결과:', analyzed);
+      alert('분석 결과가 올바르지 않습니다.');
+      return;
+    }
+    
     setAnalyzedTickets(analyzed);
     setAnalysisSummary(summary);
     setShowAnalyzedResults(true);
-    console.log('✅ 분석 완료:', summary);
+    console.log('✅ 분석 완료 처리:', {
+      analyzedTicketsSet: analyzed.length,
+      summarySet: !!summary,
+      showAnalyzedResultsSet: true
+    });
   }, []);
 
   // 분석 결과 토글

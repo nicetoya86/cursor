@@ -64,7 +64,7 @@ const GptAnalyzer = ({ tickets, onAnalysisStart, onAnalysisComplete }) => {
       
       if (onAnalysisComplete) {
         try {
-      onAnalysisComplete(result.analyzedTickets, result.summary);
+          onAnalysisComplete(result.results, result.summary);
           console.log('✅ onAnalysisComplete 호출 완료');
         } catch (error) {
           console.error('❌ onAnalysisComplete 호출 오류:', error);
@@ -72,6 +72,7 @@ const GptAnalyzer = ({ tickets, onAnalysisStart, onAnalysisComplete }) => {
         }
       }
       
+
     } catch (error) {
       console.error('❌ 분석 오류 상세:', {
         message: error.message,
