@@ -13,12 +13,17 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
 
   // 필터링된 키워드 데이터
   const filteredKeywordData = useMemo(() => {
+    console.log('🔍 PreviewKeywords - analyzedData 전체:', analyzedData);
+    console.log('🔍 PreviewKeywords - keywordData 존재 여부:', !!analyzedData?.keywordData);
+    
     if (!analyzedData?.keywordData) {
-      console.log('🔍 키워드 데이터 없음');
+      console.log('🔍 키워드 데이터 없음 - analyzedData:', analyzedData);
       return [];
     }
     
     console.log('🔍 키워드 데이터 구조:', analyzedData.keywordData);
+    console.log('🔍 키워드 데이터 키들:', Object.keys(analyzedData.keywordData));
+    console.log('🔍 키워드 데이터 값들:', Object.values(analyzedData.keywordData));
     
     try {
       let data = [];

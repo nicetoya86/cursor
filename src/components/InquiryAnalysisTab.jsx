@@ -62,6 +62,10 @@ const InquiryAnalysisTab = () => {
       );
       
       console.log('✅ 고속 분석 완료:', result.summary);
+      console.log('🔍 분석 결과 전체 구조:', result);
+      console.log('🔍 키워드 데이터 존재:', !!result.keywordData);
+      console.log('🔍 키워드 데이터 키들:', result.keywordData ? Object.keys(result.keywordData) : 'null');
+      console.log('🔍 키워드 데이터 내용:', result.keywordData);
       if (result.performance) {
         console.log('🚀 성능 정보:', result.performance);
       }
