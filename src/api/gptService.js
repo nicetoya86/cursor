@@ -9,8 +9,7 @@ const initializeOpenAI = () => {
   console.log('🔑 API 키 확인:', {
     hasApiKey: !!apiKey,
     apiKeyLength: apiKey ? apiKey.length : 0,
-    apiKeyStart: apiKey ? apiKey.substring(0, 10) + '...' : 'none',
-    apiKeyEnd: apiKey ? '...' + apiKey.substring(apiKey.length - 10) : 'none'
+    apiKeyStart: apiKey ? apiKey.substring(0, 7) + '...' : 'none'
   });
   
   if (!apiKey || apiKey.trim() === '' || apiKey === 'your-api-key-here') {
@@ -18,24 +17,18 @@ const initializeOpenAI = () => {
     return false;
   }
   
-  // API 키 형식 검증
-  if (!apiKey.startsWith('sk-')) {
-    console.error('❌ API 키 형식이 올바르지 않습니다. OpenAI API 키는 "sk-"로 시작해야 합니다.');
-    return false;
-  }
-  
-  try {
-    openai = new OpenAI({
-      apiKey: apiKey.trim(),
-      dangerouslyAllowBrowser: true
-    });
+    try {
+      openai = new OpenAI({
+        apiKey: apiKey,
+        dangerouslyAllowBrowser: true
+      });
     
     console.log('✅ OpenAI 클라이언트가 성공적으로 초기화되었습니다.');
-    return true;
-  } catch (error) {
-    console.error('❌ OpenAI 클라이언트 초기화 실패:', error);
-    return false;
-  }
+      return true;
+    } catch (error) {
+      console.error('❌ OpenAI 클라이언트 초기화 실패:', error);
+      return false;
+    }
 };
 
 // GPT 프롬프트 템플릿 (태그 기반 문의 내용 추출 - 넓은 범위)
@@ -96,7 +89,7 @@ export const analyzeSingleTicket = async (ticket) => {
     
     // OpenAI API 호출
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // 더 저렴하고 빠른 모델 사용
+      model: "gpt-4",
       messages: [
         {
           role: "system",
@@ -148,24 +141,31 @@ export const analyzeTicketsWithGPT = async (tickets) => {
   let excludedCount = 0;
 
   for (const ticket of tickets) {
+    // 티켓 유효성 검사
+    if (!ticket || typeof ticket !== 'object') {
+      console.log('⚠️ 유효하지 않은 티켓 데이터 건너뜀:', ticket);
+      excludedCount++;
+      continue;
+    }
+
     // 분석 제외 조건 확인
-      const shouldExclude = () => {
+    const shouldExclude = () => {
       // 이미 분석된 티켓 제외
       if (ticket.gptAnalysis && ticket.gptAnalysis.extractedInquiry) {
         return true;
       }
       
       // 고객 태그가 없는 티켓 제외 (선택적)
-        const customerTags = ticket && ticket.tags && Array.isArray(ticket.tags) 
-          ? ticket.tags.filter(tag => tag && typeof tag === 'string' && tag.startsWith('고객_'))
-          : [];
-        if (customerTags.length === 0) return true;
-        
-        return false;
-      };
+      const customerTags = ticket && ticket.tags && Array.isArray(ticket.tags) 
+        ? ticket.tags.filter(tag => tag && typeof tag === 'string' && tag.startsWith('고객_'))
+        : [];
+      if (customerTags.length === 0) return true;
       
-      if (shouldExclude()) {
-        excludedCount++;
+      return false;
+    };
+    
+    if (shouldExclude()) {
+      excludedCount++;
       continue;
     }
 
@@ -217,41 +217,32 @@ export const validateOpenAIKey = async () => {
   try {
     console.log('🧪 API 키 유효성 테스트 중...');
     const testResponse = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // 더 저렴한 모델 사용
-      messages: [{ role: "user", content: "Hi" }],
+      model: "gpt-4",
+      messages: [{ role: "user", content: "test" }],
       max_tokens: 1
     });
     
-    console.log('✅ API 키 검증 성공', testResponse.id);
+    console.log('✅ API 키 검증 성공');
     return true;
   } catch (error) {
     console.error('❌ API 키 검증 실패:', error);
+    console.error('❌ 오류 상세:', {
+      status: error.status,
+      message: error.message,
+      type: error.type,
+      code: error.code
+    });
     
-    // 더 상세한 오류 로깅
-    const errorDetails = {
-      status: error.status || 'unknown',
-      code: error.code || 'unknown',
-      message: error.message || 'unknown',
-      type: error.type || 'unknown',
-      param: error.param || 'none'
-    };
-    console.error('❌ 오류 상세:', errorDetails);
-    
-    // OpenAI 특정 오류 처리
     if (error.status === 401) {
-      throw new Error('OpenAI API 키가 유효하지 않습니다. 새로운 API 키를 발급받아 주세요.');
+      throw new Error('OpenAI API 키가 유효하지 않습니다. API 키를 확인해주세요.');
     } else if (error.status === 429) {
-      throw new Error('OpenAI API 사용량 한도를 초과했습니다. 요금제를 확인해주세요.');
+      throw new Error('OpenAI API 사용량 한도를 초과했습니다.');
     } else if (error.status === 403) {
-      throw new Error('OpenAI API 접근 권한이 없습니다. 계정 상태를 확인해주세요.');
-    } else if (error.status === 404) {
-      throw new Error('요청한 모델을 찾을 수 없습니다. 모델명을 확인해주세요.');
+      throw new Error('OpenAI API 접근 권한이 없습니다.');
     } else if (error.code === 'insufficient_quota') {
-      throw new Error('OpenAI API 크레딧이 부족합니다. 결제 정보를 확인해주세요.');
-    } else if (error.message && error.message.includes('network')) {
-      throw new Error('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
+      throw new Error('OpenAI API 크레딧이 부족합니다. 계정을 확인해주세요.');
     } else {
-      throw new Error(`OpenAI API 오류 (${errorDetails.status}): ${errorDetails.message}`);
+      throw new Error(`OpenAI API 오류: ${error.message}`);
     }
   }
 };
@@ -512,7 +503,7 @@ ${inquiryContents.map((content, index) => `${index + 1}. ${content}`).join('\n\n
 
         // OpenAI API 호출
         const response = await openai.chat.completions.create({
-          model: "gpt-4o-mini", // 더 저렴하고 빠른 모델 사용
+          model: "gpt-4",
           messages: [
             {
               role: "system", 
