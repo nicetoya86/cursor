@@ -65,20 +65,75 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
         // 2. 새로운 기본 분석 결과 처리 (type: 'basic')
         else if (keywordInfo.type === 'basic' && keywordInfo.content && Array.isArray(keywordInfo.content)) {
           console.log(`📊 기본 키워드 처리 시작 (${tag}):`, keywordInfo.content);
+          console.log(`📊 키워드 배열 길이: ${keywordInfo.content.length}`);
+          
           keywordInfo.content.forEach((keyword, index) => {
-            console.log(`📊 키워드 ${index} 처리:`, keyword);
-            if (keyword && keyword.keyword) {
-              console.log(`✅ 기본 키워드 추가: ${keyword.keyword} (${keyword.count}개)`);
+            console.log(`📊 키워드 ${index} 전체 구조:`, keyword);
+            console.log(`📊 키워드 ${index} 타입:`, typeof keyword);
+            console.log(`📊 키워드 ${index} 키들:`, keyword ? Object.keys(keyword) : 'null');
+            
+            // 다양한 키워드 구조에 대응
+            if (keyword && typeof keyword === 'object') {
+              // keyword 속성이 있는 경우
+              if (keyword.keyword && typeof keyword.keyword === 'string') {
+                console.log(`✅ 기본 키워드 추가: ${keyword.keyword} (${keyword.count || 0}개)`);
+                data.push({
+                  tag,
+                  type: 'basic',
+                  keyword: keyword.keyword,
+                  count: keyword.count || 0,
+                  chatIds: keyword.chatIds || [],
+                  isGPT: keyword.isGPT || false,
+                  id: `${tag}-${index}`
+                });
+              }
+              // 다른 속성명을 가진 경우 (예: name, text, word 등)
+              else if (keyword.name || keyword.text || keyword.word) {
+                const keywordText = keyword.name || keyword.text || keyword.word;
+                console.log(`✅ 대체 속성 키워드 추가: ${keywordText} (${keyword.count || 0}개)`);
+                data.push({
+                  tag,
+                  type: 'basic',
+                  keyword: keywordText,
+                  count: keyword.count || 0,
+                  chatIds: keyword.chatIds || [],
+                  isGPT: keyword.isGPT || false,
+                  id: `${tag}-${index}`
+                });
+              }
+              // 객체의 첫 번째 문자열 값을 키워드로 사용
+              else {
+                const firstStringValue = Object.values(keyword).find(v => typeof v === 'string' && v.trim());
+                if (firstStringValue) {
+                  console.log(`✅ 첫 번째 문자열 값 키워드 추가: ${firstStringValue} (${keyword.count || 0}개)`);
+                  data.push({
+                    tag,
+                    type: 'basic',
+                    keyword: firstStringValue,
+                    count: keyword.count || 0,
+                    chatIds: keyword.chatIds || [],
+                    isGPT: keyword.isGPT || false,
+                    id: `${tag}-${index}`
+                  });
+                } else {
+                  console.log(`❌ 키워드 객체에서 문자열 값을 찾을 수 없음:`, keyword);
+                }
+              }
+            }
+            // 문자열인 경우
+            else if (typeof keyword === 'string' && keyword.trim()) {
+              console.log(`✅ 문자열 키워드 추가: ${keyword}`);
               data.push({
                 tag,
                 type: 'basic',
-                keyword: keyword.keyword,
-                count: keyword.count || 0,
-                chatIds: keyword.chatIds || [],
-                isGPT: keyword.isGPT || false,
+                keyword: keyword.trim(),
+                count: 1,
+                chatIds: [],
+                isGPT: false,
                 id: `${tag}-${index}`
               });
-            } else {
+            }
+            else {
               console.log(`❌ 키워드 객체가 올바르지 않음:`, keyword);
             }
           });
