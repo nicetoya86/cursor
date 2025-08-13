@@ -82,7 +82,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
 
     const items = [];
 
-    // 각 태그의 키워드 데이터 처리
+    // 각 태그의 키워드 데이터 수집
     Object.entries(dataSource).forEach(([tag, data]) => {
       console.log(`🎯 태그 "${tag}" 처리 중:`, data);
 
@@ -155,36 +155,41 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
 
     console.log('🎯 처리된 전체 키워드 아이템:', items);
 
-    // 필터링 적용
-    let filteredItems = items;
+    // 태그별 그룹화 후 각 태그당 상위 10개로 제한
+    const byTag = items.reduce((acc, item) => {
+      if (!acc[item.tag]) acc[item.tag] = [];
+      acc[item.tag].push(item);
+      return acc;
+    }, {});
 
-    // 태그 필터
-      if (selectedTag) {
-      filteredItems = filteredItems.filter(item => item.tag === selectedTag);
-      console.log(`🎯 태그 필터 적용 후 (${selectedTag}):`, filteredItems);
-    }
+    const term = (searchTerm || '').toLowerCase();
+    const limitPerTag = 10;
 
-    // 검색 필터
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-      filteredItems = filteredItems.filter(item => 
-        item.keyword.toLowerCase().includes(term) || 
-        item.tag.toLowerCase().includes(term)
-      );
-      console.log(`🎯 검색 필터 적용 후 (${searchTerm}):`, filteredItems);
-    }
-
-    // 정렬: 빈도수 높은 순으로 정렬 (GPT와 기본 분석 통합)
-    filteredItems.sort((a, b) => {
-      // 빈도수 기준으로 정렬 (높은 순)
-      return b.count - a.count;
+    // 태그별 정렬/필터/제한
+    Object.keys(byTag).forEach(tag => {
+      let arr = byTag[tag];
+      // 검색 필터
+      if (term) {
+        arr = arr.filter(item =>
+          item.keyword.toLowerCase().includes(term) || tag.toLowerCase().includes(term)
+        );
+      }
+      // 빈도 높은 순 정렬
+      arr.sort((a, b) => b.count - a.count);
+      // 태그별 최대 10개 제한
+      byTag[tag] = arr.slice(0, limitPerTag);
     });
 
-    // 최대 10개로 제한
-    const limitedItems = filteredItems.slice(0, 10);
+    // 선택된 태그만 반환하거나, 전체 태그를 합쳐 반환
+    if (selectedTag) {
+      const result = byTag[selectedTag] || [];
+      console.log(`🎯 선택 태그(${selectedTag}) 결과:`, result);
+      return result;
+    }
 
-    console.log('🎯 최종 키워드 아이템 (최대 10개):', limitedItems);
-    return limitedItems;
+    const all = Object.values(byTag).flat();
+    console.log('🎯 전체 태그 결과(태그별 최대 10개 병합):', all);
+    return all;
   }, [keywordData, analyzedData, selectedTag, searchTerm]);
 
   // CSV 다운로드 함수
