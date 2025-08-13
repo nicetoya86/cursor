@@ -99,15 +99,17 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
       console.log(`🎯 검색 필터 적용 후 (${searchTerm}):`, filteredItems);
     }
 
-    // 정렬: GPT 먼저, 그 다음 count 순
+    // 정렬: 빈도수 높은 순으로 정렬 (GPT와 기본 분석 통합)
     filteredItems.sort((a, b) => {
-      if (a.type === 'gpt' && b.type !== 'gpt') return -1;
-      if (a.type !== 'gpt' && b.type === 'gpt') return 1;
+      // 빈도수 기준으로 정렬 (높은 순)
       return b.count - a.count;
     });
 
-    console.log('🎯 최종 키워드 아이템:', filteredItems);
-    return filteredItems;
+    // 최대 10개로 제한
+    const limitedItems = filteredItems.slice(0, 10);
+
+    console.log('🎯 최종 키워드 아이템 (최대 10개):', limitedItems);
+    return limitedItems;
   }, [analyzedData, selectedTag, searchTerm]);
 
   // CSV 다운로드 함수
@@ -263,7 +265,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
             fontSize: '12px',
             color: '#6c757d'
           }}>
-            총 {keywordItems.length}개 키워드
+            상위 {keywordItems.length}개 키워드 (최대 10개)
           </div>
         </div>
       </div>
@@ -345,22 +347,41 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
   );
 };
 
-// 키워드 카드 컴포넌트
+// 키워드 카드 컴포넌트 - 좌측 정렬 및 빈도수 강조
 const KeywordCard = ({ item }) => {
   const isGPT = item.type === 'gpt';
   
   return (
     <div style={{
       display: 'flex',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      padding: '12px 16px',
-      backgroundColor: isGPT ? '#f8f9ff' : '#ffffff',
-      border: isGPT ? '2px solid #007bff' : '1px solid #e9ecef',
-      borderRadius: '6px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+      justifyContent: 'flex-start', // 좌측 정렬
+      padding: '15px 20px',
+      backgroundColor: '#ffffff',
+      border: '1px solid #e9ecef',
+      borderRadius: '8px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      marginBottom: '8px'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {/* 순위 표시 */}
+      <div style={{
+        minWidth: '40px',
+        height: '40px',
+        backgroundColor: '#007bff',
+        color: 'white',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        marginRight: '15px'
+      }}>
+        {item.rank}
+      </div>
+      
+      {/* 키워드 정보 */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div style={{
           backgroundColor: isGPT ? '#007bff' : '#28a745',
           color: 'white',
@@ -373,32 +394,24 @@ const KeywordCard = ({ item }) => {
         </div>
         
         <div style={{
-          fontSize: '16px',
+          fontSize: '18px',
           fontWeight: 'bold',
-          color: '#343a40'
+          color: '#343a40',
+          flex: 1
         }}>
           {item.keyword}
         </div>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{
-          fontSize: '12px',
-          color: '#6c757d',
-          padding: '2px 6px',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '4px'
-        }}>
-          {item.rank}순위
-        </div>
         
+        {/* 빈도수 강조 표시 */}
         <div style={{
-          fontSize: '12px',
+          backgroundColor: '#28a745',
           color: 'white',
-          padding: '2px 8px',
-          backgroundColor: '#6c757d',
-          borderRadius: '12px',
-          fontWeight: 'bold'
+          padding: '6px 12px',
+          borderRadius: '20px',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          minWidth: '60px',
+          textAlign: 'center'
         }}>
           {item.count}회
         </div>

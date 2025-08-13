@@ -391,24 +391,68 @@ ${inquiries.map((inquiry, index) => `${index + 1}. ${inquiry}`).join('\n')}`;
     const result = response.choices[0].message.content;
     console.log(`✅ GPT 키워드 분석 완료: ${tagName}`);
     
-    // 키워드 파싱
+    // 키워드 파싱 - 더 강력한 파싱 로직
+    console.log(`🔍 GPT 응답 원문 (${tagName}):`, result);
+    
+    let keywords = [];
+    
+    // 1. 기본 키워드 패턴 매칭
     const keywordMatch = result.match(/키워드.*?:\s*(.+)/);
     if (keywordMatch) {
-      const keywords = keywordMatch[1]
+      keywords = keywordMatch[1]
         .split(',')
         .map(k => k.trim())
-        .filter(k => k.length > 0 && k.length < 20) // 너무 긴 키워드 제외
-        .slice(0, 10);
-      
-      return {
-        rawResponse: result,
-        keywords: keywords
-      };
+        .filter(k => k.length > 0 && k.length < 20);
     }
+    
+    // 2. 쉼표로 구분된 키워드 직접 추출 (백업 방법)
+    if (keywords.length === 0) {
+      const lines = result.split('\n');
+      for (const line of lines) {
+        if (line.includes(',') && !line.includes(':') && line.trim().length > 0) {
+          const lineKeywords = line
+            .split(',')
+            .map(k => k.trim().replace(/[^\w가-힣\s]/g, ''))
+            .filter(k => k.length > 0 && k.length < 20);
+          if (lineKeywords.length >= 2) {
+            keywords = lineKeywords;
+            break;
+          }
+        }
+      }
+    }
+    
+    // 3. 숫자로 시작하는 목록에서 키워드 추출 (백업 방법 2)
+    if (keywords.length === 0) {
+      const lines = result.split('\n');
+      for (const line of lines) {
+        const match = line.match(/^\d+\.\s*(.+)/);
+        if (match && match[1].trim().length > 0 && match[1].trim().length < 20) {
+          keywords.push(match[1].trim().replace(/[^\w가-힣\s]/g, ''));
+        }
+      }
+    }
+    
+    // 4. 모든 한글 단어 추출 (최후 수단)
+    if (keywords.length === 0) {
+      const koreanWords = result.match(/[가-힣]{2,}/g) || [];
+      keywords = koreanWords
+        .filter(word => 
+          word.length >= 2 && 
+          word.length < 20 &&
+          !['안녕하세요', '감사합니다', '부탁드립니다', '확인해주세요'].includes(word)
+        )
+        .slice(0, 10);
+    }
+    
+    // 최대 10개로 제한
+    keywords = keywords.slice(0, 10);
+    
+    console.log(`🔍 추출된 키워드 (${tagName}):`, keywords);
     
     return {
       rawResponse: result,
-      keywords: []
+      keywords: keywords
     };
 
   } catch (error) {
