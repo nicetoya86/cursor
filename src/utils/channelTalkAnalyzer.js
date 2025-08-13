@@ -395,25 +395,53 @@ ${inquiries.map((inquiry, index) => `${index + 1}. ${inquiry}`).join('\n')}`;
     console.log(`🔍 GPT 응답 원문 (${tagName}):`, result);
     
     let keywords = [];
-    
-    // 1. 기본 키워드 패턴 매칭
+
+    // 키워드 정제 함수: 마크다운, 따옴표, 불필요 기호 제거 및 유효성 검증
+    const cleanKeyword = (str) => {
+      if (!str) return '';
+      let s = String(str)
+        .replace(/\*\*/g, '') // 굵게 마크다운 제거
+        .replace(/[`#]/g, '') // 코드, 해시 제거
+        .replace(/[“”"']/g, '') // 따옴표류 제거
+        .replace(/[()\[\]{}]/g, '') // 괄호 제거
+        .trim();
+      // 불릿/번호 접두어 제거
+      s = s.replace(/^\s*[\-\*]?\s*\d*\.?\)*\s*/, '').trim();
+      // 허용 문자만 남김
+      s = s.replace(/[^가-힣a-zA-Z0-9\s/_-]/g, '').trim();
+      if (/^\d+$/.test(s)) return '';
+      if (s.length < 2 || s.length > 20) return '';
+      const stop = ['안녕하세요', '감사합니다', '부탁드립니다', '확인해주세요'];
+      if (stop.includes(s)) return '';
+      return s;
+    };
+
+    // 0. 굵게 처리된 텍스트(**키워드**) 우선 추출
+    const boldMatches = Array.from(result.matchAll(/\*\*([^*]+)\*\*/g)).map(m => cleanKeyword(m[1]));
+    if (boldMatches.length > 0) {
+      keywords = boldMatches.filter(Boolean);
+    }
+
+    // 1. 기본 "키워드:" 라인에서 추출
+    if (keywords.length === 0) {
     const keywordMatch = result.match(/키워드.*?:\s*(.+)/);
     if (keywordMatch) {
-      keywords = keywordMatch[1]
-        .split(',')
-        .map(k => k.trim())
-        .filter(k => k.length > 0 && k.length < 20);
+        keywords = keywordMatch[1]
+          .split(/[,·|]/)
+          .map(k => cleanKeyword(k))
+          .filter(Boolean);
+      }
     }
-    
-    // 2. 쉼표로 구분된 키워드 직접 추출 (백업 방법)
+
+    // 2. 쉼표/중점 구분 라인에서 직접 추출
     if (keywords.length === 0) {
       const lines = result.split('\n');
       for (const line of lines) {
-        if (line.includes(',') && !line.includes(':') && line.trim().length > 0) {
+        if ((line.includes(',') || line.includes('·')) && !line.includes(':') && line.trim().length > 0) {
           const lineKeywords = line
-            .split(',')
-            .map(k => k.trim().replace(/[^\w가-힣\s]/g, ''))
-            .filter(k => k.length > 0 && k.length < 20);
+            .split(/[,·|]/)
+            .map(k => cleanKeyword(k))
+            .filter(Boolean);
           if (lineKeywords.length >= 2) {
             keywords = lineKeywords;
             break;
@@ -421,32 +449,36 @@ ${inquiries.map((inquiry, index) => `${index + 1}. ${inquiry}`).join('\n')}`;
         }
       }
     }
-    
-    // 3. 숫자로 시작하는 목록에서 키워드 추출 (백업 방법 2)
+
+    // 3. 숫자/불릿 목록에서 추출
     if (keywords.length === 0) {
       const lines = result.split('\n');
       for (const line of lines) {
-        const match = line.match(/^\d+\.\s*(.+)/);
-        if (match && match[1].trim().length > 0 && match[1].trim().length < 20) {
-          keywords.push(match[1].trim().replace(/[^\w가-힣\s]/g, ''));
+        const m = line.match(/^\s*[\-\*]?\s*\d*\.?\)*\s*(.+)$/);
+        if (m) {
+          const kw = cleanKeyword(m[1]);
+          if (kw) keywords.push(kw);
         }
       }
     }
-    
+
     // 4. 모든 한글 단어 추출 (최후 수단)
     if (keywords.length === 0) {
-      const koreanWords = result.match(/[가-힣]{2,}/g) || [];
+      const koreanWords = result.match(/[가-힣]{2,20}/g) || [];
       keywords = koreanWords
-        .filter(word => 
-          word.length >= 2 && 
-          word.length < 20 &&
-          !['안녕하세요', '감사합니다', '부탁드립니다', '확인해주세요'].includes(word)
-        )
+        .map(w => cleanKeyword(w))
+        .filter(Boolean)
         .slice(0, 10);
     }
-    
-    // 최대 10개로 제한
-    keywords = keywords.slice(0, 10);
+
+    // 중복 제거(순서 보존) 및 최대 10개 제한
+    const seen = new Set();
+    keywords = keywords.filter(k => {
+      const low = k.toLowerCase();
+      if (seen.has(low)) return false;
+      seen.add(low);
+      return true;
+    }).slice(0, 10);
     
     console.log(`🔍 추출된 키워드 (${tagName}):`, keywords);
     
