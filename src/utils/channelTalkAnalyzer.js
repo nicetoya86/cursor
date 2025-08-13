@@ -537,13 +537,29 @@ export const analyzeKeywordsOnly = async (plainTextData, settings, onProgress) =
       
       if (result && result.keywords && result.keywords.length > 0) {
         console.log(`✅ ${tag} GPT 키워드 저장:`, result.keywords);
+        
+        // GPT 키워드의 실제 빈도수 계산
+        const keywordCounts = {};
+        for (const item of items) {
+          const text = item.plainText.toLowerCase();
+          for (const keyword of result.keywords) {
+            const keywordLower = keyword.toLowerCase();
+            if (text.includes(keywordLower)) {
+              keywordCounts[keyword] = (keywordCounts[keyword] || 0) + 1;
+            }
+          }
+        }
+        
+        console.log(`🔍 ${tag} 키워드 빈도수 계산:`, keywordCounts);
+        
         keywordData[tag] = {
           type: 'gpt',
           keywords: result.keywords,
           content: result.keywords.map((keyword, index) => ({
             keyword,
-            count: items.length - index, // 순서 기반 가중치
-            isGPT: true
+            count: keywordCounts[keyword] || Math.max(1, items.length - index * 2), // 실제 빈도 또는 순서 기반 가중치
+            isGPT: true,
+            rank: index + 1
           })),
           rawResponse: result.rawResponse,
           itemCount: items.length

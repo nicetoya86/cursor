@@ -11,7 +11,9 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
   // 디버깅을 위한 로그
   console.log('🎯 PreviewKeywords 렌더링 시작');
   console.log('🎯 analyzedData:', analyzedData);
-  console.log('🎯 keywordData:', analyzedData?.keywordData);
+  console.log('🎯 analyzedData.keywordData:', analyzedData?.keywordData);
+  console.log('🎯 state keywordData:', keywordData);
+  console.log('🎯 분석 상태:', { isAnalyzing, analysisProgress });
 
   // 키워드 분석 실행 함수
   const handleAnalyzeKeywords = async () => {
@@ -89,22 +91,47 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
         return;
       }
 
-      // GPT 키워드 처리
-      if (data.type === 'gpt' && data.keywords && Array.isArray(data.keywords)) {
-        console.log(`🎯 태그 "${tag}": GPT 키워드 처리`, data.keywords);
+      // GPT 키워드 처리 - 개선된 로직
+      if (data.type === 'gpt') {
+        console.log(`🎯 태그 "${tag}": GPT 키워드 처리`, data);
         
-        data.keywords.forEach((keyword, index) => {
-          if (keyword && typeof keyword === 'string') {
-            items.push({
-              id: `gpt-${tag}-${index}`,
-              tag: tag,
-              type: 'gpt',
+        // 1. keywords 배열에서 직접 처리
+        if (data.keywords && Array.isArray(data.keywords)) {
+          console.log(`🎯 태그 "${tag}": keywords 배열에서 처리`, data.keywords);
+          data.keywords.forEach((keyword, index) => {
+            if (keyword && typeof keyword === 'string' && keyword.trim().length > 0) {
+              // content 배열에서 해당 키워드의 빈도수 찾기
+              const contentItem = data.content?.find(c => c.keyword === keyword);
+              const count = contentItem?.count || Math.max(1, 10 - index); // 기본 가중치
+              
+              items.push({
+                id: `gpt-${tag}-${index}`,
+                tag: tag,
+                type: 'gpt',
                 keyword: keyword.trim(),
-              count: data.itemCount || 0,
-              rank: index + 1
-            });
-          }
-        });
+                count: count,
+                rank: index + 1
+              });
+            }
+          });
+        }
+        
+        // 2. content 배열에서 처리 (백업)
+        else if (data.content && Array.isArray(data.content)) {
+          console.log(`🎯 태그 "${tag}": content 배열에서 처리`, data.content);
+          data.content.forEach((item, index) => {
+            if (item && item.keyword && typeof item.keyword === 'string') {
+              items.push({
+                id: `gpt-content-${tag}-${index}`,
+                tag: tag,
+                type: 'gpt',
+                keyword: item.keyword.trim(),
+                count: item.count || Math.max(1, 10 - index),
+                rank: item.rank || (index + 1)
+              });
+            }
+          });
+        }
       }
 
       // 기본 키워드 처리
@@ -446,8 +473,23 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
             color: '#6c757d'
           }}>
             <div style={{ fontSize: '36px', marginBottom: '15px' }}>🔍</div>
-            <h4>조건에 맞는 키워드가 없습니다</h4>
-            <p style={{ fontSize: '14px' }}>필터 조건을 변경해보세요.</p>
+            <h4>키워드 분석 결과가 없습니다</h4>
+            <p style={{ fontSize: '14px' }}>
+              {keywordData ? '조건에 맞는 키워드가 없습니다. 필터 조건을 변경해보세요.' : '키워드 분석을 먼저 실행해주세요.'}
+            </p>
+            <div style={{ 
+              fontSize: '12px', 
+              marginTop: '10px', 
+              padding: '10px', 
+              backgroundColor: '#f8f9fa', 
+              borderRadius: '4px',
+              maxWidth: '300px'
+            }}>
+              <strong>디버그 정보:</strong><br/>
+              keywordData 존재: {keywordData ? 'Yes' : 'No'}<br/>
+              분석된 태그 수: {keywordData ? Object.keys(keywordData).length : 0}<br/>
+              원본 데이터 존재: {analyzedData?.plainTextData ? 'Yes' : 'No'}
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
