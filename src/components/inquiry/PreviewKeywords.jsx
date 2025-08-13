@@ -41,17 +41,16 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
         // 1. GPT 분석 결과 처리
         if (keywordInfo.type === 'gpt') {
           console.log(`🤖 GPT 키워드 처리 시작 (${tag})`);
-          // GPT 키워드는 keywords 배열 또는 content 배열에 있을 수 있음
-          const keywords = Array.isArray(keywordInfo.keywords) ? keywordInfo.keywords : 
-                          Array.isArray(keywordInfo.content) ? keywordInfo.content : [];
+          console.log(`🤖 keywordInfo 전체:`, keywordInfo);
+          
+          // GPT 키워드는 keywords 배열에 있음
+          const keywords = Array.isArray(keywordInfo.keywords) ? keywordInfo.keywords : [];
           console.log(`🤖 GPT 키워드 배열 (${tag}):`, keywords);
-          console.log(`🤖 keywordInfo.keywords:`, keywordInfo.keywords);
-          console.log(`🤖 keywordInfo.content:`, keywordInfo.content);
           
           if (keywords.length > 0) {
             const processedKeywords = keywords.map(k => {
               if (typeof k === 'object' && k.keyword) return k.keyword;
-              return String(k);
+              return String(k).trim();
             }).filter(Boolean);
             
             console.log(`🤖 처리된 GPT 키워드 (${tag}):`, processedKeywords);
@@ -63,6 +62,8 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
               rawResponse: keywordInfo.rawResponse || '',
               itemCount: keywordInfo.itemCount || 0
             });
+          } else {
+            console.log(`❌ GPT 키워드 배열이 비어있음 (${tag})`);
           }
         }
         // 2. 새로운 기본 분석 결과 처리 (type: 'basic')
@@ -448,6 +449,9 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
         }}>
           전체 태그: {tags.length}개 | 
           전체 키워드: {Object.values(analyzedData.keywordData).reduce((sum, data) => {
+            if (data.type === 'gpt') {
+              return sum + (data.keywords?.length || 0);
+            }
             return sum + (data.content?.length || 0);
           }, 0)}개 | 
           필터링 결과: {filteredKeywordData.length}개 |

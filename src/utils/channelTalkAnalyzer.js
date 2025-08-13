@@ -638,9 +638,13 @@ export const analyzeChannelTalkData = async (userChatData, messageData, settings
     
     // GPT 키워드 결과 처리
     for (const { tag, result, items } of gptKeywordResults) {
-      if (result && result.keywords.length > 0) {
+      console.log(`🔍 ${tag} GPT 키워드 결과 처리:`, result);
+      
+      if (result && result.keywords && result.keywords.length > 0) {
+        console.log(`✅ ${tag} GPT 키워드 저장:`, result.keywords);
         keywordData[tag] = {
           type: 'gpt',
+          keywords: result.keywords, // 키워드 배열을 직접 저장
           content: result.keywords.map((keyword, index) => ({
             keyword,
             count: items.length - index, // 순서 기반 가중치
@@ -650,8 +654,11 @@ export const analyzeChannelTalkData = async (userChatData, messageData, settings
           itemCount: items.length
         };
       } else if (items) {
+        console.log(`❌ ${tag} GPT 키워드 실패, 기본 분석으로 폴백`);
         // GPT 실패 시 기본 분석으로 폴백
         keywordData[tag] = await performBasicKeywordAnalysis(tag, items, settings);
+      } else {
+        console.log(`❌ ${tag} 키워드 데이터 없음`);
       }
     }
   } else {
