@@ -461,6 +461,153 @@ ${inquiries.map((inquiry, index) => `${index + 1}. ${inquiry}`).join('\n')}`;
   }
 };
 
+// 별도 키워드 분석 함수 (수동 실행용)
+export const analyzeKeywordsOnly = async (plainTextData, settings, onProgress) => {
+  const startTime = Date.now();
+  console.log('🔍 키워드 전용 분석 시작:', {
+    dataCount: plainTextData.length,
+    settings
+  });
+
+  // 진행률 업데이트 함수
+  const updateProgress = (step, message, progress = 0) => {
+    if (onProgress) {
+      onProgress({ step, message, progress });
+    }
+    console.log(`📊 ${step}: ${message} (${progress}%)`);
+  };
+
+  updateProgress('초기화', '키워드 분석 엔진 초기화 중...', 5);
+
+  // OpenAI 초기화 시도
+  const hasGPT = initializeOpenAI();
+  updateProgress('초기화', hasGPT ? 'GPT 키워드 분석 모드' : '기본 키워드 분석 모드', 10);
+
+  // 태그별 그룹화
+  const tagGroups = {};
+  for (const item of plainTextData) {
+    if (!tagGroups[item.tag]) {
+      tagGroups[item.tag] = [];
+    }
+    tagGroups[item.tag].push(item);
+  }
+
+  updateProgress('그룹화', `${Object.keys(tagGroups).length}개 태그별 그룹화 완료`, 20);
+
+  const keywordData = {};
+  const tagEntries = Object.entries(tagGroups);
+
+  if (hasGPT) {
+    updateProgress('GPT분석', 'GPT 키워드 분석 시작...', 30);
+    
+    // GPT 키워드 분석을 병렬로 실행
+    const batchSize = 5;
+    const gptKeywordPromises = [];
+    
+    for (let i = 0; i < tagEntries.length; i += batchSize) {
+      const batch = tagEntries.slice(i, i + batchSize);
+      const batchPromises = batch.map(async ([tag, items]) => {
+        if (items.length === 0) return { tag, result: null };
+        
+        try {
+          console.log(`🔍 ${tag} GPT 키워드 분석 시작 (${items.length}개 문의)`);
+          const gptKeywords = await analyzeTagKeywordsWithGPT(items, tag);
+          console.log(`✅ ${tag} GPT 키워드 분석 완료`);
+          return { tag, result: gptKeywords, items };
+        } catch (error) {
+          console.error(`❌ ${tag} GPT 키워드 분석 실패:`, error);
+          return { tag, result: null, items };
+        }
+      });
+      
+      gptKeywordPromises.push(...batchPromises);
+    }
+    
+    // 모든 GPT 키워드 분석 결과 대기
+    const gptKeywordResults = await Promise.all(gptKeywordPromises);
+    
+    // GPT 키워드 결과 처리
+    let processedCount = 0;
+    for (const { tag, result, items } of gptKeywordResults) {
+      processedCount++;
+      const progress = 30 + (processedCount / gptKeywordResults.length) * 50;
+      updateProgress('GPT분석', `${tag} 키워드 처리 중... (${processedCount}/${gptKeywordResults.length})`, progress);
+      
+      console.log(`🔍 ${tag} GPT 키워드 결과 처리:`, result);
+      
+      if (result && result.keywords && result.keywords.length > 0) {
+        console.log(`✅ ${tag} GPT 키워드 저장:`, result.keywords);
+        keywordData[tag] = {
+          type: 'gpt',
+          keywords: result.keywords,
+          content: result.keywords.map((keyword, index) => ({
+            keyword,
+            count: items.length - index, // 순서 기반 가중치
+            isGPT: true
+          })),
+          rawResponse: result.rawResponse,
+          itemCount: items.length
+        };
+      } else if (items) {
+        console.log(`❌ ${tag} GPT 키워드 실패, 기본 분석으로 폴백`);
+        // GPT 실패 시 기본 분석으로 폴백
+        keywordData[tag] = await performBasicKeywordAnalysis(tag, items, settings);
+      }
+    }
+  } else {
+    updateProgress('기본분석', '기본 키워드 분석 시작...', 30);
+    
+    // GPT 미사용 시 기본 키워드 분석을 병렬로 처리
+    const basicKeywordPromises = tagEntries.map(async ([tag, items]) => {
+      const result = await performBasicKeywordAnalysis(tag, items, settings);
+      return { tag, result };
+    });
+    
+    const basicKeywordResults = await Promise.all(basicKeywordPromises);
+    
+    let processedCount = 0;
+    for (const { tag, result } of basicKeywordResults) {
+      processedCount++;
+      const progress = 30 + (processedCount / basicKeywordResults.length) * 50;
+      updateProgress('기본분석', `${tag} 키워드 처리 중... (${processedCount}/${basicKeywordResults.length})`, progress);
+      
+      keywordData[tag] = result;
+    }
+  }
+
+  const endTime = Date.now();
+  const totalTime = endTime - startTime;
+  
+  updateProgress('완료', `키워드 분석 완료! (${(totalTime / 1000).toFixed(1)}초)`, 100);
+
+  console.log('✅ 키워드 전용 분석 완료:', {
+    totalTags: Object.keys(keywordData).length,
+    totalKeywords: Object.values(keywordData).reduce((sum, data) => {
+      if (data.type === 'gpt') {
+        return sum + (data.keywords?.length || 0);
+      }
+      return sum + (data.content?.length || 0);
+    }, 0),
+    processingTime: `${(totalTime / 1000).toFixed(1)}초`,
+    hasGPTAnalysis: hasGPT
+  });
+
+  return {
+    keywordData,
+    summary: {
+      totalTags: Object.keys(keywordData).length,
+      totalKeywords: Object.values(keywordData).reduce((sum, data) => {
+        if (data.type === 'gpt') {
+          return sum + (data.keywords?.length || 0);
+        }
+        return sum + (data.content?.length || 0);
+      }, 0),
+      hasGPTAnalysis: hasGPT,
+      processingTime: totalTime
+    }
+  };
+};
+
 // 메인 분석 함수 (성능 최적화 버전)
 export const analyzeChannelTalkData = async (userChatData, messageData, settings, onProgress) => {
   const startTime = Date.now();
@@ -647,81 +794,13 @@ export const analyzeChannelTalkData = async (userChatData, messageData, settings
   }
   
   console.log('✅ FAQ 분석 완료:', Object.keys(faqData).length, '개 태그');
-  updateProgress('FAQ분석', `FAQ 분석 완료: ${Object.keys(faqData).length}개 태그`, 65);
+  updateProgress('FAQ분석', `FAQ 분석 완료: ${Object.keys(faqData).length}개 태그`, 80);
   
-  // 4단계: 병렬 키워드 분석 (성능 최적화)
-  updateProgress('키워드분석', '키워드 분석 시작...', 70);
-  const keywordData = {};
+  // 키워드 분석은 별도의 수동 분석으로 분리
+  console.log('ℹ️ 키워드 분석은 [Tag별 상위 키워드] 탭에서 수동으로 진행됩니다.');
+  const keywordData = {}; // 빈 키워드 데이터로 초기화
   
-  if (hasGPT) {
-    // GPT 키워드 분석을 병렬로 실행 (최대 5개씩 배치 처리)
-    const batchSize = 5;
-    const gptKeywordPromises = [];
-    
-    for (let i = 0; i < tagEntries.length; i += batchSize) {
-      const batch = tagEntries.slice(i, i + batchSize);
-      const batchPromises = batch.map(async ([tag, items]) => {
-        if (items.length === 0) return { tag, result: null };
-        
-        try {
-          console.log(`🔍 ${tag} GPT 키워드 분석 시작 (${items.length}개 문의)`);
-          const gptKeywords = await analyzeTagKeywordsWithGPT(items, tag);
-          console.log(`✅ ${tag} GPT 키워드 분석 완료`);
-          return { tag, result: gptKeywords, items };
-        } catch (error) {
-          console.error(`❌ ${tag} GPT 키워드 분석 실패:`, error);
-          return { tag, result: null, items };
-        }
-      });
-      
-      gptKeywordPromises.push(...batchPromises);
-    }
-    
-    // 모든 GPT 키워드 분석 결과 대기
-    const gptKeywordResults = await Promise.all(gptKeywordPromises);
-    
-    // GPT 키워드 결과 처리
-    for (const { tag, result, items } of gptKeywordResults) {
-      console.log(`🔍 ${tag} GPT 키워드 결과 처리:`, result);
-      
-      if (result && result.keywords && result.keywords.length > 0) {
-        console.log(`✅ ${tag} GPT 키워드 저장:`, result.keywords);
-        keywordData[tag] = {
-          type: 'gpt',
-          keywords: result.keywords, // 키워드 배열을 직접 저장
-          content: result.keywords.map((keyword, index) => ({
-            keyword,
-            count: items.length - index, // 순서 기반 가중치
-            isGPT: true
-          })),
-          rawResponse: result.rawResponse,
-          itemCount: items.length
-        };
-      } else if (items) {
-        console.log(`❌ ${tag} GPT 키워드 실패, 기본 분석으로 폴백`);
-        // GPT 실패 시 기본 분석으로 폴백
-        keywordData[tag] = await performBasicKeywordAnalysis(tag, items, settings);
-      } else {
-        console.log(`❌ ${tag} 키워드 데이터 없음`);
-      }
-    }
-  } else {
-    // GPT 미사용 시 기본 키워드 분석을 병렬로 처리
-    const basicKeywordPromises = tagEntries.map(async ([tag, items]) => {
-      const result = await performBasicKeywordAnalysis(tag, items, settings);
-      return { tag, result };
-    });
-    
-    const basicKeywordResults = await Promise.all(basicKeywordPromises);
-    for (const { tag, result } of basicKeywordResults) {
-      keywordData[tag] = result;
-    }
-  }
-  
-  console.log('✅ 키워드 분석 완료:', Object.keys(keywordData).length, '개 태그');
-  updateProgress('키워드분석', `키워드 분석 완료: ${Object.keys(keywordData).length}개 태그`, 85);
-  
-  // 5단계: 대표 메시지 데이터 (채팅별)
+  // 4단계: 대표 메시지 데이터 (채팅별)
   updateProgress('대표메시지', '대표 메시지 정리 중...', 90);
   
   const representativeData = [];

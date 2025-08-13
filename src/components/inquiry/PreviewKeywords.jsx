@@ -1,31 +1,79 @@
 import React, { useState, useMemo } from 'react';
+import { analyzeKeywordsOnly } from '../../utils/channelTalkAnalyzer';
 
 const PreviewKeywords = ({ analyzedData, settings }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
+  const [keywordData, setKeywordData] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState({ step: '', message: '', progress: 0 });
 
   // 디버깅을 위한 로그
   console.log('🎯 PreviewKeywords 렌더링 시작');
   console.log('🎯 analyzedData:', analyzedData);
   console.log('🎯 keywordData:', analyzedData?.keywordData);
 
-  // 태그 목록 추출
+  // 키워드 분석 실행 함수
+  const handleAnalyzeKeywords = async () => {
+    if (!analyzedData?.plainTextData || analyzedData.plainTextData.length === 0) {
+      alert('분석할 데이터가 없습니다. 먼저 고속 분석을 실행해주세요.');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAnalysisProgress({ step: '시작', message: '키워드 분석을 시작합니다...', progress: 0 });
+
+    try {
+      console.log('🔍 키워드 분석 시작:', analyzedData.plainTextData.length, '개 데이터');
+      
+      const result = await analyzeKeywordsOnly(
+        analyzedData.plainTextData,
+        settings,
+        (progress) => {
+          setAnalysisProgress(progress);
+        }
+      );
+
+      console.log('✅ 키워드 분석 완료:', result);
+      setKeywordData(result.keywordData);
+      
+    } catch (error) {
+      console.error('❌ 키워드 분석 오류:', error);
+      alert(`키워드 분석 중 오류가 발생했습니다: ${error.message}`);
+    } finally {
+      setIsAnalyzing(false);
+      setAnalysisProgress({ step: '', message: '', progress: 0 });
+    }
+  };
+
+  // 태그 목록 추출 (키워드 데이터 또는 원본 데이터에서)
   const availableTags = useMemo(() => {
-    if (!analyzedData?.keywordData) {
-      console.log('🎯 키워드 데이터 없음, 빈 태그 배열 반환');
-      return [];
+    // 키워드 분석 완료된 경우
+    if (keywordData) {
+      const tags = Object.keys(keywordData);
+      console.log('🎯 키워드 분석 완료된 태그들:', tags);
+      return tags.sort();
     }
     
-    const tags = Object.keys(analyzedData.keywordData);
-    console.log('🎯 사용 가능한 태그들:', tags);
-    return tags.sort();
-  }, [analyzedData]);
+    // 원본 데이터에서 태그 추출
+    if (analyzedData?.plainTextData) {
+      const tags = [...new Set(analyzedData.plainTextData.map(item => item.tag))];
+      console.log('🎯 원본 데이터의 태그들:', tags);
+      return tags.sort();
+    }
+    
+    console.log('🎯 사용 가능한 태그 없음');
+    return [];
+  }, [keywordData, analyzedData]);
 
-  // 키워드 데이터 변환 및 필터링
+    // 키워드 데이터 변환 및 필터링
   const keywordItems = useMemo(() => {
     console.log('🎯 키워드 아이템 처리 시작');
     
-    if (!analyzedData?.keywordData) {
+    // 키워드 분석이 완료된 경우 keywordData 사용
+    const dataSource = keywordData || analyzedData?.keywordData;
+    
+    if (!dataSource) {
       console.log('🎯 키워드 데이터 없음');
       return [];
     }
@@ -33,7 +81,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
     const items = [];
 
     // 각 태그의 키워드 데이터 처리
-    Object.entries(analyzedData.keywordData).forEach(([tag, data]) => {
+    Object.entries(dataSource).forEach(([tag, data]) => {
       console.log(`🎯 태그 "${tag}" 처리 중:`, data);
 
       if (!data) {
@@ -51,7 +99,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
               id: `gpt-${tag}-${index}`,
               tag: tag,
               type: 'gpt',
-              keyword: keyword.trim(),
+                keyword: keyword.trim(),
               count: data.itemCount || 0,
               rank: index + 1
             });
@@ -68,14 +116,14 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
             items.push({
               id: `basic-${tag}-${index}`,
               tag: tag,
-              type: 'basic',
+                type: 'basic',
               keyword: item.keyword.trim(),
               count: item.count || 0,
               rank: index + 1
-            });
-          }
-        });
-      }
+              });
+            }
+          });
+        }
     });
 
     console.log('🎯 처리된 전체 키워드 아이템:', items);
@@ -84,14 +132,14 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
     let filteredItems = items;
 
     // 태그 필터
-    if (selectedTag) {
+      if (selectedTag) {
       filteredItems = filteredItems.filter(item => item.tag === selectedTag);
       console.log(`🎯 태그 필터 적용 후 (${selectedTag}):`, filteredItems);
     }
 
     // 검색 필터
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
       filteredItems = filteredItems.filter(item => 
         item.keyword.toLowerCase().includes(term) || 
         item.tag.toLowerCase().includes(term)
@@ -110,7 +158,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
 
     console.log('🎯 최종 키워드 아이템 (최대 10개):', limitedItems);
     return limitedItems;
-  }, [analyzedData, selectedTag, searchTerm]);
+  }, [keywordData, analyzedData, selectedTag, searchTerm]);
 
   // CSV 다운로드 함수
   const handleDownloadCSV = () => {
@@ -145,7 +193,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
     document.body.removeChild(link);
   };
 
-  // 데이터가 없는 경우
+    // 데이터가 없는 경우
   if (!analyzedData) {
     return (
       <div style={{
@@ -158,12 +206,13 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
       }}>
         <div style={{ fontSize: '48px', marginBottom: '20px' }}>📊</div>
         <h3>데이터를 먼저 분석해주세요</h3>
-        <p>좌측에서 채널톡 데이터를 업로드하고 분석을 실행하세요.</p>
+        <p>좌측에서 채널톡 데이터를 업로드하고 고속 분석을 실행하세요.</p>
       </div>
     );
   }
 
-  if (!analyzedData.keywordData || Object.keys(analyzedData.keywordData).length === 0) {
+  // 고속 분석은 완료되었지만 키워드 분석이 아직 안된 경우
+  if (!keywordData && (!analyzedData.keywordData || Object.keys(analyzedData.keywordData).length === 0)) {
     return (
       <div style={{
         display: 'flex',
@@ -174,13 +223,69 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
         color: '#6c757d'
       }}>
         <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔍</div>
-        <h3>키워드 데이터가 없습니다</h3>
-        <p>분석 결과에 키워드 데이터가 포함되지 않았습니다.</p>
-        <div style={{ fontSize: '12px', marginTop: '20px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-          <strong>디버그 정보:</strong><br/>
-          analyzedData 존재: {analyzedData ? 'Yes' : 'No'}<br/>
-          keywordData 존재: {analyzedData?.keywordData ? 'Yes' : 'No'}<br/>
-          keywordData 키 개수: {analyzedData?.keywordData ? Object.keys(analyzedData.keywordData).length : 0}
+        <h3>키워드 분석을 시작하세요</h3>
+        <p>고속 분석이 완료되었습니다. 아래 버튼을 클릭하여 키워드 분석을 진행하세요.</p>
+        
+        {isAnalyzing ? (
+          <div style={{ textAlign: 'center', marginTop: '20px' }}>
+            <div style={{ 
+              fontSize: '16px', 
+              fontWeight: 'bold', 
+              color: '#007bff',
+              marginBottom: '10px' 
+            }}>
+              {analysisProgress.step}: {analysisProgress.message}
+            </div>
+            <div style={{
+              width: '300px',
+              height: '20px',
+              backgroundColor: '#e9ecef',
+              borderRadius: '10px',
+              overflow: 'hidden',
+              margin: '10px auto'
+            }}>
+              <div style={{
+                width: `${analysisProgress.progress}%`,
+                height: '100%',
+                backgroundColor: '#007bff',
+                transition: 'width 0.3s ease'
+              }}></div>
+            </div>
+            <div style={{ fontSize: '12px', color: '#6c757d' }}>
+              {analysisProgress.progress.toFixed(0)}% 완료
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={handleAnalyzeKeywords}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              marginTop: '20px'
+            }}
+          >
+            🔍 키워드 분석 시작
+          </button>
+        )}
+        
+        <div style={{ 
+          fontSize: '12px', 
+          marginTop: '20px', 
+          padding: '10px', 
+          backgroundColor: '#f8f9fa', 
+          borderRadius: '4px',
+          maxWidth: '400px'
+        }}>
+          <strong>분석 조건:</strong><br/>
+          • Tag별 문의 내용에서 자주 언급하는 키워드 추출<br/>
+          • Tag별 최대 10개 키워드, 빈도 높은 순으로 정렬<br/>
+          • 인사말, 숫자, 불용어는 분석에서 제외
         </div>
       </div>
     );
@@ -194,7 +299,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
         backgroundColor: '#f8f9fa',
         borderBottom: '2px solid #e9ecef'
       }}>
-        <div style={{
+                <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -203,62 +308,79 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
           <h2 style={{ margin: 0, color: '#343a40' }}>
             🔍 Tag별 상위 키워드
           </h2>
-          <button
-            onClick={handleDownloadCSV}
-            disabled={keywordItems.length === 0}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: keywordItems.length === 0 ? '#6c757d' : '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: keywordItems.length === 0 ? 'not-allowed' : 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            📥 CSV 다운로드
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={handleAnalyzeKeywords}
+              disabled={isAnalyzing || !analyzedData?.plainTextData}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: isAnalyzing ? '#6c757d' : '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: isAnalyzing || !analyzedData?.plainTextData ? 'not-allowed' : 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              {isAnalyzing ? '🔄 분석 중...' : '🔍 키워드 분석'}
+            </button>
+            <button
+              onClick={handleDownloadCSV}
+              disabled={keywordItems.length === 0}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: keywordItems.length === 0 ? '#6c757d' : '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: keywordItems.length === 0 ? 'not-allowed' : 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              📥 CSV 다운로드
+            </button>
+          </div>
         </div>
 
         {/* 필터 컨트롤 */}
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
             <label style={{ fontSize: '12px', color: '#6c757d', marginRight: '5px' }}>태그 필터:</label>
-            <select
-              value={selectedTag}
-              onChange={(e) => setSelectedTag(e.target.value)}
-              style={{
+          <select
+            value={selectedTag}
+            onChange={(e) => setSelectedTag(e.target.value)}
+            style={{
                 padding: '6px 10px',
-                border: '1px solid #ced4da',
-                borderRadius: '4px',
+              border: '1px solid #ced4da',
+              borderRadius: '4px',
                 fontSize: '14px'
-              }}
-            >
-              <option value="">전체 태그</option>
+            }}
+          >
+            <option value="">전체 태그</option>
               {availableTags.map(tag => (
-                <option key={tag} value={tag}>{tag}</option>
-              ))}
-            </select>
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
           </div>
-
+          
           <div>
             <label style={{ fontSize: '12px', color: '#6c757d', marginRight: '5px' }}>키워드 검색:</label>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="키워드 입력..."
-              style={{
+            style={{
                 padding: '6px 10px',
-                border: '1px solid #ced4da',
-                borderRadius: '4px',
+              border: '1px solid #ced4da',
+              borderRadius: '4px',
                 fontSize: '14px',
                 width: '200px'
-              }}
-            />
+            }}
+          />
           </div>
-
-          <div style={{
+          
+                    <div style={{
             padding: '6px 12px',
             backgroundColor: '#e9ecef',
             borderRadius: '4px',
@@ -268,6 +390,48 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
             상위 {keywordItems.length}개 키워드 (최대 10개)
           </div>
         </div>
+
+        {/* 분석 진행 상황 표시 */}
+        {isAnalyzing && (
+          <div style={{
+            marginTop: '15px',
+            padding: '15px',
+            backgroundColor: '#e7f3ff',
+            borderRadius: '6px',
+            border: '1px solid #007bff'
+          }}>
+            <div style={{ 
+              fontSize: '14px', 
+              fontWeight: 'bold', 
+              color: '#007bff',
+              marginBottom: '10px' 
+            }}>
+              {analysisProgress.step}: {analysisProgress.message}
+            </div>
+            <div style={{
+              width: '100%',
+              height: '8px',
+              backgroundColor: '#ffffff',
+              borderRadius: '4px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                width: `${analysisProgress.progress}%`,
+                height: '100%',
+                backgroundColor: '#007bff',
+                transition: 'width 0.3s ease'
+              }}></div>
+            </div>
+            <div style={{ 
+              fontSize: '12px', 
+              color: '#6c757d', 
+              marginTop: '5px',
+              textAlign: 'right'
+            }}>
+              {analysisProgress.progress.toFixed(0)}% 완료
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 키워드 리스트 */}
@@ -291,7 +455,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
             {selectedTag ? (
               // 선택된 태그의 키워드만 표시
               <div>
-                <div style={{
+                            <div style={{
                   padding: '10px 15px',
                   backgroundColor: '#e7f3ff',
                   borderLeft: '4px solid #007bff',
@@ -302,7 +466,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                   <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#6c757d' }}>
                     {keywordItems.length}개 키워드
                   </p>
-                </div>
+                          </div>
                 
                 <div style={{ display: 'grid', gap: '8px' }}>
                   {keywordItems.map(item => (
@@ -318,7 +482,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                   const tagItems = keywordItems.filter(item => item.tag === tag);
                   return (
                     <div key={tag} style={{ marginBottom: '30px' }}>
-                      <div style={{
+                                  <div style={{
                         padding: '10px 15px',
                         backgroundColor: '#f8f9fa',
                         borderLeft: '4px solid #28a745',
@@ -329,7 +493,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                         <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#6c757d' }}>
                           {tagItems.length}개 키워드
                         </p>
-                      </div>
+                                </div>
                       
                       <div style={{ display: 'grid', gap: '8px' }}>
                         {tagItems.map(item => (
