@@ -10,330 +10,114 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
     return Object.keys(analyzedData.keywordData).sort();
   }, [analyzedData]);
 
-  // 필터링된 키워드 데이터
+  // 필터링된 키워드 데이터 - 단순화된 로직
   const filteredKeywordData = useMemo(() => {
-    console.log('🔍 PreviewKeywords - analyzedData 전체:', analyzedData);
-    console.log('🔍 PreviewKeywords - keywordData 존재 여부:', !!analyzedData?.keywordData);
+    console.log('🔍 키워드 데이터 처리 시작');
+    console.log('🔍 analyzedData:', analyzedData);
+    console.log('🔍 keywordData:', analyzedData?.keywordData);
     
     if (!analyzedData?.keywordData) {
-      console.log('🔍 키워드 데이터 없음 - analyzedData:', analyzedData);
+      console.log('❌ 키워드 데이터 없음');
       return [];
     }
     
-    console.log('🔍 키워드 데이터 구조:', analyzedData.keywordData);
-    console.log('🔍 키워드 데이터 키들:', Object.keys(analyzedData.keywordData));
-    console.log('🔍 키워드 데이터 값들:', Object.values(analyzedData.keywordData));
-    
-    try {
       let data = [];
       
-      // 태그별 키워드를 하나의 배열로 변환 (모든 가능한 구조 처리)
+    // 각 태그별로 키워드 처리
       Object.entries(analyzedData.keywordData).forEach(([tag, keywordInfo]) => {
-        console.log(`🔍 태그 ${tag} 키워드 정보:`, keywordInfo);
-        console.log(`🔍 태그 ${tag} 키워드 정보 타입:`, typeof keywordInfo);
-        console.log(`🔍 태그 ${tag} 키워드 정보 키들:`, keywordInfo ? Object.keys(keywordInfo) : 'null');
+      console.log(`🏷️ 태그 ${tag} 처리 시작:`, keywordInfo);
         
         if (!keywordInfo) {
-          console.log(`❌ ${tag} 키워드 정보가 null/undefined`);
-          return; // null/undefined 체크
+        console.log(`❌ ${tag}: 키워드 정보 없음`);
+        return;
         }
         
-        // 1. GPT 분석 결과 처리
+      // GPT 키워드 처리
         if (keywordInfo.type === 'gpt') {
-          console.log(`🤖 GPT 키워드 처리 시작 (${tag})`);
-          console.log(`🤖 keywordInfo 전체:`, keywordInfo);
-          
-          // GPT 키워드는 keywords 배열에 있음
-          const keywords = Array.isArray(keywordInfo.keywords) ? keywordInfo.keywords : [];
-          console.log(`🤖 GPT 키워드 배열 (${tag}):`, keywords);
-          
-          if (keywords.length > 0) {
-            const processedKeywords = keywords.map(k => {
-              if (typeof k === 'object' && k.keyword) return k.keyword;
-              return String(k).trim();
-            }).filter(Boolean);
-            
-            console.log(`🤖 처리된 GPT 키워드 (${tag}):`, processedKeywords);
-            
+        console.log(`🤖 ${tag}: GPT 키워드 처리`);
+        
+        // keywords 배열에서 키워드 추출
+        if (Array.isArray(keywordInfo.keywords) && keywordInfo.keywords.length > 0) {
+          console.log(`✅ ${tag}: GPT 키워드 발견`, keywordInfo.keywords);
             data.push({
               tag,
               type: 'gpt',
-              keywords: processedKeywords,
-              rawResponse: keywordInfo.rawResponse || '',
-              itemCount: keywordInfo.itemCount || 0
-            });
-          } else {
-            console.log(`❌ GPT 키워드 배열이 비어있음 (${tag})`);
-          }
-        }
-        // 2. 새로운 기본 분석 결과 처리 (type: 'basic')
-        else if (keywordInfo.type === 'basic' && keywordInfo.content && Array.isArray(keywordInfo.content)) {
-          console.log(`📊 기본 키워드 처리 시작 (${tag}):`, keywordInfo.content);
-          console.log(`📊 키워드 배열 길이: ${keywordInfo.content.length}`);
-          
-          keywordInfo.content.forEach((keyword, index) => {
-            console.log(`📊 키워드 ${index} 전체 구조:`, keyword);
-            console.log(`📊 키워드 ${index} 타입:`, typeof keyword);
-            console.log(`📊 키워드 ${index} 키들:`, keyword ? Object.keys(keyword) : 'null');
-            
-            // 다양한 키워드 구조에 대응
-            if (keyword && typeof keyword === 'object') {
-              // keyword 속성이 있는 경우
-              if (keyword.keyword && typeof keyword.keyword === 'string') {
-                console.log(`✅ 기본 키워드 추가: ${keyword.keyword} (${keyword.count || 0}개)`);
-                data.push({
-                  tag,
-                  type: 'basic',
-                  keyword: keyword.keyword,
-                  count: keyword.count || 0,
-                  chatIds: keyword.chatIds || [],
-                  isGPT: keyword.isGPT || false,
-                  id: `${tag}-${index}`
-                });
-              }
-              // 다른 속성명을 가진 경우 (예: name, text, word 등)
-              else if (keyword.name || keyword.text || keyword.word) {
-                const keywordText = keyword.name || keyword.text || keyword.word;
-                console.log(`✅ 대체 속성 키워드 추가: ${keywordText} (${keyword.count || 0}개)`);
-                data.push({
-                  tag,
-                  type: 'basic',
-                  keyword: keywordText,
-                  count: keyword.count || 0,
-                  chatIds: keyword.chatIds || [],
-                  isGPT: keyword.isGPT || false,
-                  id: `${tag}-${index}`
-                });
-              }
-              // 객체의 첫 번째 문자열 값을 키워드로 사용
-              else {
-                const firstStringValue = Object.values(keyword).find(v => typeof v === 'string' && v.trim());
-                if (firstStringValue) {
-                  console.log(`✅ 첫 번째 문자열 값 키워드 추가: ${firstStringValue} (${keyword.count || 0}개)`);
-                  data.push({
-                    tag,
-                    type: 'basic',
-                    keyword: firstStringValue,
-                    count: keyword.count || 0,
-                    chatIds: keyword.chatIds || [],
-                    isGPT: keyword.isGPT || false,
-                    id: `${tag}-${index}`
-                  });
-                } else {
-                  console.log(`❌ 키워드 객체에서 문자열 값을 찾을 수 없음:`, keyword);
-                }
-              }
-            }
-            // 문자열인 경우
-            else if (typeof keyword === 'string' && keyword.trim()) {
-              console.log(`✅ 문자열 키워드 추가: ${keyword}`);
-              data.push({
-                tag,
-                type: 'basic',
-                keyword: keyword.trim(),
-                count: 1,
-                chatIds: [],
-                isGPT: false,
-                id: `${tag}-${index}`
-              });
-            }
-            else {
-              console.log(`❌ 키워드 객체가 올바르지 않음:`, keyword);
-            }
+            keywords: keywordInfo.keywords,
+            itemCount: keywordInfo.itemCount || 0,
+            rawResponse: keywordInfo.rawResponse || ''
           });
+        } else {
+          console.log(`❌ ${tag}: GPT 키워드 배열이 비어있음`);
         }
-        // 3. 기존 구조 (content 직접 배열) - type이 없는 경우도 처리
-        else if (keywordInfo.content && Array.isArray(keywordInfo.content)) {
-          console.log(`📊 기본 키워드 처리 (기존 구조, ${tag}):`, keywordInfo.content);
-          keywordInfo.content.forEach((keyword, index) => {
-            console.log(`📊 기존 구조 키워드 ${index} 처리:`, keyword);
-            if (keyword && keyword.keyword) {
-              console.log(`✅ 기존 구조 키워드 추가: ${keyword.keyword} (${keyword.count}개)`);
-              data.push({
-                tag,
-                type: 'basic',
-                keyword: keyword.keyword,
-                count: keyword.count || 0,
-                chatIds: keyword.chatIds || [],
-                isGPT: keyword.isGPT || false,
-                id: `${tag}-${index}`
-              });
-            } else {
-              console.log(`❌ 기존 구조 키워드 객체가 올바르지 않음:`, keyword);
-            }
-          });
-        }
-        // 4. 직접 배열인 경우 (최고 호환성)
-        else if (Array.isArray(keywordInfo)) {
-          console.log(`📋 직접 배열 키워드 처리 (${tag}):`, keywordInfo);
-          keywordInfo.forEach((keyword, index) => {
-            console.log(`📋 직접 배열 키워드 ${index} 처리:`, keyword);
-            if (keyword && typeof keyword === 'object' && keyword.keyword) {
-              data.push({
-                tag,
-                type: 'basic',
-                keyword: keyword.keyword,
-                count: keyword.count || 0,
-                chatIds: keyword.chatIds || [],
-                isGPT: keyword.isGPT || false,
-                id: `${tag}-${index}`
-              });
-            }
-          });
-        }
-        // 5. 알 수 없는 구조 강제 처리 (더 강력한 파싱)
-        else {
-          console.log(`❓ 알 수 없는 키워드 구조 처리 시작 (${tag}):`, keywordInfo);
-          
-          // 재귀적으로 모든 객체를 탐색하여 키워드 추출
-          const extractKeywordsRecursively = (obj, path = '') => {
-            console.log(`🔍 재귀적 키워드 추출: path=${path}, obj=`, obj);
-            if (!obj) return;
-            
-            if (typeof obj === 'string' && obj.trim()) {
-              // 문자열인 경우 키워드로 처리
-              console.log(`✅ 문자열 키워드 추가: ${obj.trim()}`);
-              data.push({
-                tag,
-                type: 'basic',
-                keyword: obj.trim(),
-                count: 1,
-                chatIds: [],
-                isGPT: false,
-                id: `${tag}-${path}`
-              });
-            } else if (Array.isArray(obj)) {
-              // 배열인 경우 각 요소 처리
-              console.log(`🔍 배열 처리: 길이=${obj.length}`);
-              obj.forEach((item, idx) => {
-                extractKeywordsRecursively(item, `${path}-arr${idx}`);
-              });
-            } else if (typeof obj === 'object' && obj !== null) {
-              // 키워드 객체 형태인지 확인
-              if (obj.keyword && typeof obj.keyword === 'string') {
-                console.log(`✅ 키워드 객체 추가: ${obj.keyword}`);
-                data.push({
-                  tag,
-                  type: 'basic',
-                  keyword: obj.keyword,
-                  count: obj.count || 0,
-                  chatIds: obj.chatIds || [],
-                  isGPT: obj.isGPT || false,
-                  id: `${tag}-${path}`
-                });
-              } else {
-                // 객체의 모든 속성을 재귀적으로 탐색
-                console.log(`🔍 객체 속성 탐색: 키들=${Object.keys(obj).join(', ')}`);
-                Object.entries(obj).forEach(([key, value]) => {
-                  extractKeywordsRecursively(value, `${path}-${key}`);
-                });
-              }
-            }
-          };
-          
-          extractKeywordsRecursively(keywordInfo, 'unknown');
-        }
+      }
+      // 기본 키워드 처리
+      else if (keywordInfo.type === 'basic' || keywordInfo.content) {
+        console.log(`📊 ${tag}: 기본 키워드 처리`);
         
-        console.log(`🔍 ${tag} 처리 후 현재 data 길이:`, data.length);
+        const content = keywordInfo.content || [];
+        if (Array.isArray(content) && content.length > 0) {
+          console.log(`✅ ${tag}: 기본 키워드 발견`, content);
+          
+          content.forEach((item, index) => {
+            if (item && item.keyword) {
+              data.push({
+                tag,
+                type: 'basic',
+                keyword: item.keyword,
+                count: item.count || 0,
+                chatIds: item.chatIds || [],
+                isGPT: item.isGPT || false,
+                id: `${tag}-${index}`
+              });
+            }
+          });
+        } else {
+          console.log(`❌ ${tag}: 기본 키워드 배열이 비어있음`);
+        }
+              } else {
+        console.log(`❓ ${tag}: 알 수 없는 키워드 구조`, keywordInfo);
+      }
       });
       
       console.log('🔍 처리된 키워드 데이터:', data);
-      console.log('🔍 처리된 키워드 데이터 개수:', data.length);
-      
-      console.log('🔍 필터링 전 데이터 개수:', data.length);
-      console.log('🔍 필터링 전 데이터 샘플:', data.slice(0, 3));
       
       // 태그 필터링
       if (selectedTag) {
-        const beforeFilter = data.length;
-        console.log(`🔍 태그 필터링 시작: selectedTag="${selectedTag}"`);
-        data = data.filter(item => {
-          const matches = item.tag === selectedTag;
-          if (!matches) {
-            console.log(`🔍 태그 불일치: "${item.tag}" !== "${selectedTag}"`);
-          }
-          return matches;
-        });
-        console.log(`🔍 태그 필터링: ${beforeFilter} -> ${data.length} (태그: ${selectedTag})`);
-      }
-      
-      // 검색 필터링
+      data = data.filter(item => item.tag === selectedTag);
+      console.log(`🔍 태그 필터링 후 (${selectedTag}):`, data);
+    }
+
+    // 검색어 필터링
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
-        const beforeSearch = data.length;
-        console.log(`🔍 검색 필터링 시작: searchTerm="${searchTerm}"`);
         data = data.filter(item => {
-          try {
-            let matches = false;
             if (item.type === 'gpt') {
-              matches = item.tag.toLowerCase().includes(term) ||
-                       (Array.isArray(item.keywords) && item.keywords.some(k => 
-                         typeof k === 'string' && k.toLowerCase().includes(term)
-                       ));
+          return item.tag.toLowerCase().includes(term) ||
+                 item.keywords.some(k => k.toLowerCase().includes(term));
             } else {
-              matches = item.tag.toLowerCase().includes(term) ||
-                       (item.keyword && item.keyword.toLowerCase().includes(term));
-            }
-            if (!matches) {
-              console.log(`🔍 검색 불일치:`, item);
-            }
-            return matches;
-          } catch (error) {
-            console.warn('검색 필터링 중 오류:', error, item);
-            return false;
-          }
-        });
-        console.log(`🔍 검색 필터링: ${beforeSearch} -> ${data.length} (검색어: ${term})`);
-      }
-      
-      console.log('🔍 필터링 후 데이터 개수:', data.length);
-      console.log('🔍 필터링 후 데이터 샘플:', data.slice(0, 3));
-      
-      // 정렬 (빈도가 높은 순 우선, GPT는 별도 표시)
+          return item.tag.toLowerCase().includes(term) ||
+                 item.keyword.toLowerCase().includes(term);
+        }
+      });
+      console.log(`🔍 검색 필터링 후 (${searchTerm}):`, data);
+    }
+
+    // 정렬
       data.sort((a, b) => {
-        try {
           // GPT 결과를 먼저 표시
           if (a.type === 'gpt' && b.type !== 'gpt') return -1;
           if (a.type !== 'gpt' && b.type === 'gpt') return 1;
           
-          // 둘 다 기본 분석인 경우 빈도 높은 순으로 정렬 (항상 높은 순)
+      // 기본 분석인 경우 빈도 순 정렬
           if (a.type === 'basic' && b.type === 'basic') {
-            const aCount = a.count || 0;
-            const bCount = b.count || 0;
-            // 빈도가 높은 순으로 고정 정렬
-            return bCount - aCount;
+        return (b.count || 0) - (a.count || 0);
           }
           
           return 0;
-        } catch (error) {
-          console.warn('정렬 중 오류:', error);
-          return 0;
-        }
       });
       
-      console.log('🔍 정렬 후 키워드 데이터:', data.slice(0, 5)); // 처음 5개만 로그
-      
       console.log('🔍 최종 키워드 데이터:', data);
-      console.log('🔍 최종 키워드 데이터 개수:', data.length);
-      console.log('🔍 최종 키워드 데이터가 배열인가?', Array.isArray(data));
-      console.log('🔍 data 타입:', typeof data);
-      
-      // 데이터가 있는지 재확인
-      if (!data || !Array.isArray(data) || data.length === 0) {
-        console.log('❌ 최종 데이터가 비어있거나 잘못됨');
-        return [];
-      }
-      
       return data;
-    } catch (error) {
-      console.error('❌❌❌ 키워드 데이터 처리 중 오류 발생 ❌❌❌:', error);
-      console.error('❌ 오류 스택:', error.stack);
-      console.error('❌ 오류 메시지:', error.message);
-      console.error('❌ analyzedData:', analyzedData);
-      console.error('❌ selectedTag:', selectedTag);
-      console.error('❌ searchTerm:', searchTerm);
-      return [];
-    }
   }, [analyzedData, selectedTag, searchTerm]);
 
   // CSV 복사 함수
@@ -461,21 +245,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
 
       {/* 키워드 리스트 영역 */}
       <div style={{ flex: 1, overflow: 'auto', padding: '15px' }}>
-        {(() => {
-          console.log('🔍 키워드 렌더링 시작');
-          console.log('🔍 filteredKeywordData.length:', filteredKeywordData.length);
-          console.log('🔍 filteredKeywordData 샘플 (처음 5개):', filteredKeywordData.slice(0, 5));
-          console.log('🔍 filteredKeywordData 전체:', filteredKeywordData);
-          console.log('🔍 analyzedData.keywordData 존재:', !!analyzedData?.keywordData);
-          console.log('🔍 selectedTag:', selectedTag);
-          console.log('🔍 searchTerm:', searchTerm);
-          
-          const isEmpty = !filteredKeywordData || filteredKeywordData.length === 0;
-          console.log('🔍 isEmpty 판단:', isEmpty);
-          console.log('🔍 filteredKeywordData가 배열인가?', Array.isArray(filteredKeywordData));
-          
-          return isEmpty;
-        })() ? (
+        {filteredKeywordData.length === 0 ? (
           <div style={{
             textAlign: 'center',
             color: '#6c757d',
@@ -493,14 +263,6 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
             <div style={{ fontSize: '10px', marginTop: '5px', color: '#dc3545' }}>
               필터: 선택된태그={selectedTag || '없음'}, 검색어={searchTerm || '없음'}
             </div>
-            {analyzedData?.keywordData && Object.keys(analyzedData.keywordData).length > 0 && (
-              <div style={{ fontSize: '9px', marginTop: '10px', color: '#6c757d', textAlign: 'left', maxHeight: '200px', overflow: 'auto' }}>
-                <strong>원본 키워드 데이터 구조:</strong>
-                <pre style={{ fontSize: '8px', textAlign: 'left' }}>
-                  {JSON.stringify(analyzedData.keywordData, null, 2)}
-                </pre>
-              </div>
-            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -519,143 +281,9 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                   🏷️ {selectedTag}
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {filteredKeywordData.map((item, index) => {
-                    if (!item) return null;
-                    
-                    const key = item.id || `${item.tag}-${index}`;
-                    
-                    try {
-                      // GPT 분석 결과인 경우
-                      if (item.type === 'gpt') {
-                        const keywords = Array.isArray(item.keywords) ? item.keywords : [];
-                        return (
-                          <div
-                            key={key}
-                            style={{
-                              border: '2px solid #007bff',
-                              borderRadius: '8px',
-                              padding: '15px',
-                              backgroundColor: '#f8f9ff'
-                            }}
-                          >
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              marginBottom: '10px'
-                            }}>
-                              <span style={{
-                                backgroundColor: '#007bff',
-                                color: 'white',
-                                padding: '4px 8px',
-                                borderRadius: '12px',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                                marginRight: '8px'
-                              }}>
-                                🤖 GPT 키워드 분석
-                              </span>
-                              <span style={{
-                                color: '#6c757d',
-                                fontSize: '12px'
-                              }}>
-                                {item.itemCount || 0}개 문의 분석
-                              </span>
-                            </div>
-                            <div style={{
-                              display: 'flex',
-                              flexWrap: 'wrap',
-                              gap: '8px'
-                            }}>
-                              {keywords.length > 0 ? keywords.map((keyword, keyIndex) => (
-                                <span
-                                  key={`${key}-keyword-${keyIndex}`}
-                                  style={{
-                                    backgroundColor: '#007bff',
-                                    color: 'white',
-                                    padding: '6px 12px',
-                                    borderRadius: '20px',
-                                    fontSize: '13px',
-                                    fontWeight: 'bold',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px'
-                                  }}
-                                >
-                                  <span>{keyword || '키워드 없음'}</span>
-                                  <span style={{
-                                    backgroundColor: 'rgba(255,255,255,0.2)',
-                                    padding: '2px 6px',
-                                    borderRadius: '10px',
-                                    fontSize: '11px'
-                                  }}>
-                                    {keyIndex + 1}순위
-                                  </span>
-                                </span>
-                              )) : (
-                                <span style={{ color: '#6c757d', fontSize: '12px' }}>
-                                  키워드가 없습니다.
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      }
-                      
-                      // 기본 분석 결과인 경우
-                      return (
-                        <div
-                          key={key}
-                          style={{
-                            border: '1px solid #e9ecef',
-                            borderRadius: '6px',
-                            padding: '12px',
-                            backgroundColor: '#ffffff',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                          }}
-                        >
-                          <div style={{
-                            fontSize: '14px',
-                            color: '#343a40',
-                            fontWeight: 'bold'
-                          }}>
-                            {item.keyword || '키워드 없음'}
-                          </div>
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px'
-                          }}>
-                            <span style={{
-                              backgroundColor: '#28a745',
-                              color: 'white',
-                              padding: '2px 8px',
-                              borderRadius: '12px',
-                              fontSize: '11px',
-                              fontWeight: 'bold'
-                            }}>
-                              {item.count || 0}개 채팅
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    } catch (renderError) {
-                      console.error('키워드 렌더링 오류:', renderError, item);
-                      return (
-                        <div key={key} style={{
-                          padding: '10px',
-                          backgroundColor: '#f8d7da',
-                          color: '#721c24',
-                          border: '1px solid #f5c6cb',
-                          borderRadius: '4px',
-                          fontSize: '12px'
-                        }}>
-                          키워드 표시 중 오류가 발생했습니다.
-                        </div>
-                      );
-                    }
-                  }).filter(Boolean)}
+                  {filteredKeywordData.map((item, index) => (
+                    <KeywordItem key={item.id || `${item.tag}-${index}`} item={item} />
+                  ))}
                 </div>
               </div>
             ) : (
@@ -692,25 +320,31 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                         </span>
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-                        {tagKeywords.map((item, index) => {
-                          if (!item) return null;
-                          
-                          const key = item.id || `${item.tag}-${index}`;
-                          
-                          try {
-                            // GPT 분석 결과인 경우
+                        {tagKeywords.map((item, index) => (
+                          <KeywordItem key={item.id || `${item.tag}-${index}`} item={item} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// 키워드 아이템 컴포넌트
+const KeywordItem = ({ item }) => {
                             if (item.type === 'gpt') {
-                              const keywords = Array.isArray(item.keywords) ? item.keywords : [];
                               return (
-                                <div
-                                  key={key}
-                                  style={{
+      <div style={{
                                     border: '2px solid #007bff',
                                     borderRadius: '8px',
                                     padding: '15px',
                                     backgroundColor: '#f8f9ff'
-                                  }}
-                                >
+      }}>
                                   <div style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -739,9 +373,9 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                                     flexWrap: 'wrap',
                                     gap: '8px'
                                   }}>
-                                    {keywords.length > 0 ? keywords.map((keyword, keyIndex) => (
+          {item.keywords && item.keywords.length > 0 ? item.keywords.map((keyword, keyIndex) => (
                                       <span
-                                        key={`${key}-keyword-${keyIndex}`}
+              key={keyIndex}
                                         style={{
                                           backgroundColor: '#007bff',
                                           color: 'white',
@@ -754,7 +388,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                                           gap: '4px'
                                         }}
                                       >
-                                        <span>{keyword || '키워드 없음'}</span>
+              <span>{keyword}</span>
                                         <span style={{
                                           backgroundColor: 'rgba(255,255,255,0.2)',
                                           padding: '2px 6px',
@@ -774,11 +408,9 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                               );
                             }
                             
-                            // 기본 분석 결과인 경우
+  // 기본 분석 결과
                             return (
-                              <div
-                                key={key}
-                                style={{
+    <div style={{
                                   border: '1px solid #e9ecef',
                                   borderRadius: '6px',
                                   padding: '12px',
@@ -786,8 +418,7 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                                   display: 'flex',
                                   justifyContent: 'space-between',
                                   alignItems: 'center'
-                                }}
-                              >
+    }}>
                                 <div style={{
                                   fontSize: '14px',
                                   color: '#343a40',
@@ -810,32 +441,6 @@ const PreviewKeywords = ({ analyzedData, settings }) => {
                                   }}>
                                     {item.count || 0}개 채팅
                                   </span>
-                                </div>
-                              </div>
-                            );
-                          } catch (renderError) {
-                            console.error('키워드 렌더링 오류:', renderError, item);
-                            return (
-                              <div key={key} style={{
-                                padding: '10px',
-                                backgroundColor: '#f8d7da',
-                                color: '#721c24',
-                                border: '1px solid #f5c6cb',
-                                borderRadius: '4px',
-                                fontSize: '12px'
-                              }}>
-                                키워드 표시 중 오류가 발생했습니다.
-                              </div>
-                            );
-                          }
-                        }).filter(Boolean)}
-                      </div>
-                    </div>
-                  );
-                })
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
